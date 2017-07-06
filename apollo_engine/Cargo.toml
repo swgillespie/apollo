@@ -1,0 +1,9 @@
+[package]
+name = "apollo_engine"
+version = "0.0.1"
+authors = ["Sean Gillespie <sean@swgillespie.me>"]
+
+[dependencies]
+bitflags = "0.9.1"
+num-traits = "0.1.39"
+parking_lot = { version = "0.4.4", features = ["nightly"] }
