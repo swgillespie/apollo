@@ -1,5 +1,4 @@
-// Copyright 2017 Sean Gillespie. See the COPYRIGHT
-// file at the top-level directory of this distribution.
+// Copyright 2017 Sean Gillespie.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -19,14 +18,9 @@ use std::default::Default;
 use std::iter::Iterator;
 use std::ops;
 use std::fmt;
-use parking_lot::RwLock;
-use types::{Square, Rank, File, Color, Piece, PieceKind};
-use slides;
+use types::{Square, Rank, File};
 use num_traits::FromPrimitive;
 
-static PAWN_ATTACKS: RwLock<[[Bitboard; 64]; 2]> = RwLock::new([[Bitboard::none(); 64]; 2]);
-static KNIGHT_ATTACKS: RwLock<[Bitboard; 64]> = RwLock::new([Bitboard::none(); 64]);
-static KING_ATTACKS: RwLock<[Bitboard; 64]> = RwLock::new([Bitboard::none(); 64]);
 const RANK_MASKS: [u64; 8] = [0x00000000000000FF,
                               0x000000000000FF00,
                               0x0000000000FF0000,
@@ -260,102 +254,6 @@ impl IntoIterator for Bitboard {
 
     fn into_iter(self) -> BitboardIterator {
         self.iter()
-    }
-}
-
-fn initialize_knight_bitboards() {
-    // for knights: https://chessprogramming.wikispaces.com/Knight+Pattern
-    let mut knight_table = KNIGHT_ATTACKS.write();
-
-    // collection of masks to ensure we don't go off the board
-    let not_a_file = !FILE_MASKS[File::A as usize];
-    let not_ab_file = !(FILE_MASKS[File::A as usize] | FILE_MASKS[File::B as usize]);
-    let not_h_file = !FILE_MASKS[File::H as usize];
-    let not_gh_file = !(FILE_MASKS[File::G as usize] | FILE_MASKS[File::H as usize]);
-    for sq_idx in (Square::A1 as u64)..(Square::H8 as u64) {
-        let mut board = Bitboard::none();
-        let sq_bit = 1u64 << sq_idx;
-
-        {
-            let mut add_move = |bits: u64, mask: u64| {
-                let target = FromPrimitive::from_u64(bits & mask);
-                board.set(target.unwrap());
-            };
-
-            // the eight possible knight moves.
-            add_move(sq_bit << 17, not_a_file);
-            add_move(sq_bit << 10, not_ab_file);
-            add_move(sq_bit >> 6, not_ab_file);
-            add_move(sq_bit >> 15, not_a_file);
-            add_move(sq_bit << 15, not_h_file);
-            add_move(sq_bit << 6, not_gh_file);
-            add_move(sq_bit << 10, not_gh_file);
-            add_move(sq_bit << 17, not_h_file);
-        }
-
-        knight_table[sq_idx as usize] = board;
-    }
-}
-
-fn initialize_pawn_bitboards() {
-    // since the pawn is the only piece whose movement is influenced
-    // by the side of the player owning the pawn, the pawn movement board
-    // is composed of two boards - one for each side.
-    let mut pawn_table = PAWN_ATTACKS.write();
-    let not_a_file = !FILE_MASKS[File::A as usize];
-    let not_h_file = !FILE_MASKS[File::H as usize];
-    for sq_idx in (Square::A1 as u64)..(Square::H8 as u64) {
-        let mut white_board = Bitboard::none();
-        let mut black_board = Bitboard::none();
-        let sq_bit = 1u64 << sq_idx;
-
-        // pawns capture up and to the left and up and to the right.
-        // by our compass rose, that corresponds to +/- 7 and +/- 9.
-        let white_mask = ((sq_bit << 7) & not_h_file) | ((sq_bit << 9) & not_a_file);
-        let black_mask = ((sq_bit >> 7) & not_a_file) | ((sq_bit >> 9) & not_h_file);
-
-        if let Some(sq) = FromPrimitive::from_u64(white_mask) {
-            white_board.set(sq);
-        } else {
-            panic!("does this happen?");
-        }
-
-        if let Some(sq) = FromPrimitive::from_u64(black_mask) {
-            black_board.set(sq);
-        } else {
-            panic!("does this happen?");
-        }
-
-        pawn_table[Color::White as usize][sq_idx as usize] = white_board;
-        pawn_table[Color::Black as usize][sq_idx as usize] = black_board;
-    }
-}
-
-/// Initializes the global bitboards, which are lists of pre-computed moves
-/// used by the engine to quickly query piece moves.
-pub fn initialize() {
-    initialize_pawn_bitboards();
-    initialize_knight_bitboards();
-}
-
-/// Calculates the bitboard of attack squares for a given piece.
-pub fn attacks(piece: Piece, square: Square, occupancy: Bitboard) -> Bitboard {
-    match piece.kind {
-        PieceKind::Pawn => {
-            let pawn_attacks = PAWN_ATTACKS.read();
-            pawn_attacks[piece.color as usize][square as usize]
-        }
-        PieceKind::Knight => {
-            let knight_attacks = KNIGHT_ATTACKS.read();
-            knight_attacks[square as usize]
-        }
-        PieceKind::Bishop => slides::bishop_attacks(square, occupancy),
-        PieceKind::Rook => slides::rook_attacks(square, occupancy),
-        PieceKind::Queen => slides::queen_attacks(square, occupancy),
-        PieceKind::King => {
-            let king_attacks = KING_ATTACKS.read();
-            king_attacks[square as usize]
-        }
     }
 }
 

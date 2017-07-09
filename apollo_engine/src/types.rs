@@ -1,5 +1,4 @@
-// Copyright 2017 Sean Gillespie. See the COPYRIGHT
-// file at the top-level directory of this distribution.
+// Copyright 2017 Sean Gillespie.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -80,6 +79,24 @@ pub enum Rank {
     Rank5 = 4, Rank6 = 5, Rank7 = 6, Rank8 = 7
 }
 
+impl Rank {
+    pub fn from_char(c: char) -> Option<Rank> {
+        let result = match c {
+            '1' => Rank::Rank1,
+            '2' => Rank::Rank2,
+            '3' => Rank::Rank3,
+            '4' => Rank::Rank4,
+            '5' => Rank::Rank5,
+            '6' => Rank::Rank6,
+            '7' => Rank::Rank7,
+            '8' => Rank::Rank8,
+            _ => return None
+        };
+
+        Some(result)
+    }
+}
+
 impl FromPrimitive for Rank {
     fn from_i64(x: i64) -> Option<Rank> {
         <Rank as FromPrimitive>::from_u64(x as u64)
@@ -124,7 +141,25 @@ impl fmt::Display for Rank {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum File {
     A = 0, B = 1, C = 2, D = 3, E = 4, F = 5, G = 6, H = 7
-} 
+}
+
+impl File {
+    pub fn from_char(c: char) -> Option<File> {
+        let result = match c {
+            'a' => File::A,
+            'b' => File::B,
+            'c' => File::C,
+            'd' => File::D,
+            'e' => File::E,
+            'f' => File::F,
+            'g' => File::G,
+            'h' => File::H,
+            _ => return None
+        };
+
+        Some(result)
+    }
+}
 
 impl FromPrimitive for File {
     fn from_i64(x: i64) -> Option<File> {
@@ -182,6 +217,7 @@ impl Color {
     }
 }
 
+/// The kinds of chess pieces.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum PieceKind {
@@ -214,6 +250,7 @@ impl FromPrimitive for PieceKind {
 }
 
 /// A Piece is a collection of a PieceKind and a Color.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Piece {
     pub kind: PieceKind,
     pub color: Color
@@ -261,10 +298,13 @@ impl Direction {
 
 bitflags! {
     pub struct CastleStatus : u8 {
+        const CASTLE_NONE = 0x00;
         const WHITE_O_O = 0x01;
         const WHITE_O_O_O = 0x02;
+        const WHITE_MASK = 0x03;
         const BLACK_O_O = 0x04;
         const BLACK_O_O_O = 0x08;
+        const BLACK_MASK = 0x0C;
         const CASTLE_ALL = 0x0F;
     }
 }

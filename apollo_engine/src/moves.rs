@@ -1,5 +1,4 @@
-// Copyright 2017 Sean Gillespie. See the COPYRIGHT
-// file at the top-level directory of this distribution.
+// Copyright 2017 Sean Gillespie.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -275,6 +274,7 @@ mod tests {
         let mv = Move::kingside_castle(Square::A1, Square::A2);
         assert!(mv.is_kingside_castle());
         assert!(!mv.is_queenside_castle());
+        assert!(!mv.is_capture());
     }
 
     #[test]
@@ -282,5 +282,6 @@ mod tests {
         let mv = Move::queenside_castle(Square::A2, Square::H2);
         assert!(mv.is_queenside_castle());
         assert!(!mv.is_kingside_castle());
+        assert!(!mv.is_capture());
     }
 }
