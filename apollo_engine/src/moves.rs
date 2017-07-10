@@ -90,6 +90,8 @@ impl Move {
         mov
     }
 
+    /// Constructs a new capture move from the source square to the destination
+    /// square, promoting the current piece to the given piece kind.
     pub fn promotion(source: Square, dest: Square, promoted: PieceKind) -> Move {
         let mut mov = Move::quiet(source, dest);
         mov.0 |= PROMO_BIT;
@@ -104,24 +106,32 @@ impl Move {
         mov
     }
 
+    /// Constructs a new promotion capture move from the source square to the
+    /// destination square, promoting the current piece to the given piece kind.
     pub fn promotion_capture(source: Square, dest: Square, promotion: PieceKind) -> Move {
         let mut mov = Move::promotion(source, dest, promotion);
         mov.0 |= CAPTURE_BIT;
         mov
     }
 
+    /// Constructs a new kingside castle from the source square to the
+    /// destination square.
     pub fn kingside_castle(source: Square, dest: Square) -> Move {
         let mut mov = Move::quiet(source, dest);
         mov.0 |= SPECIAL_0_BIT;
         mov
     }
 
+    /// Constructs a new queenside castle from the source square to the
+    /// destination square.
     pub fn queenside_castle(source: Square, dest: Square) -> Move {
         let mut mov = Move::quiet(source, dest);
         mov.0 |= SPECIAL_0_BIT | SPECIAL_1_BIT;
         mov
     }
 
+    /// If this move is a promotion, returns the piece kind that the
+    /// pawn is being promoted to. Panics if the move is not a promotion.
     pub fn promotion_piece(self) -> PieceKind {
         assert!(self.is_promotion());
         let piece = self.0 & (SPECIAL_0_BIT | SPECIAL_1_BIT);
@@ -130,7 +140,7 @@ impl Move {
             1 => PieceKind::Bishop,
             2 => PieceKind::Rook,
             3 => PieceKind::Queen,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -164,14 +174,17 @@ impl Move {
         (self.0 & ATTR_MASK) == 1
     }
 
+    /// Returns whether or not this move is a promotion.
     pub fn is_promotion(self) -> bool {
         (self.0 & PROMO_BIT) != 0
     }
 
+    /// Returns whether or not this move is a kingside castle.
     pub fn is_kingside_castle(self) -> bool {
         (self.0 & ATTR_MASK) == 2
     }
 
+    /// Returns whether or not this move is a queenside castle.
     pub fn is_queenside_castle(self) -> bool {
         (self.0 & ATTR_MASK) == 3
     }
@@ -189,7 +202,7 @@ mod tests {
         assert_eq!(Square::A5, quiet.destination());
         assert!(quiet.is_quiet());
     }
-    
+
     #[test]
     fn capture() {
         let capture = Move::capture(Square::B4, Square::C4);
