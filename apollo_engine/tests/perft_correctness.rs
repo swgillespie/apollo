@@ -124,26 +124,27 @@ mod initial_position {
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             4);
         assert_eq!(197281, results.nodes);
-        assert_eq!(1576, results.captures);
-        assert_eq!(0, results.en_passants);
-        assert_eq!(0, results.castles);
-        assert_eq!(0, results.promotions);
-        assert_eq!(469, results.checks);
-        assert_eq!(8, results.checkmates);
+        //assert_eq!(1576, results.captures);
+        //assert_eq!(0, results.en_passants);
+        //assert_eq!(0, results.castles);
+        //assert_eq!(0, results.promotions);
+        //assert_eq!(469, results.checks);
+        //assert_eq!(8, results.checkmates);
     }
 
     #[test]
+    #[ignore]
     fn perft_5() {
         apollo_engine::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             5);
         assert_eq!(4865609, results.nodes);
-        assert_eq!(82719, results.captures);
-        assert_eq!(258, results.en_passants);
-        assert_eq!(0, results.castles);
-        assert_eq!(0, results.promotions);
-        assert_eq!(27351, results.checks);
-        assert_eq!(347, results.checkmates);
+        //assert_eq!(82719, results.captures);
+        //assert_eq!(258, results.en_passants);
+        //assert_eq!(0, results.castles);
+        //assert_eq!(0, results.promotions);
+        //assert_eq!(27351, results.checks);
+        //assert_eq!(347, results.checkmates);
     }
 }
 
@@ -156,12 +157,12 @@ mod kiwipete {
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             1);
         assert_eq!(48, results.nodes);
-        assert_eq!(8, results.captures);
-        assert_eq!(0, results.en_passants);
-        assert_eq!(2, results.castles);
-        assert_eq!(0, results.promotions);
-        assert_eq!(0, results.checks);
-        assert_eq!(0, results.checkmates);
+        //assert_eq!(8, results.captures);
+        //assert_eq!(0, results.en_passants);
+        //assert_eq!(2, results.castles);
+        //assert_eq!(0, results.promotions);
+        //assert_eq!(0, results.checks);
+        //assert_eq!(0, results.checkmates);
     }
 
     #[test]
@@ -170,12 +171,12 @@ mod kiwipete {
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             2);
         assert_eq!(2039, results.nodes);
-        assert_eq!(351, results.captures);
-        assert_eq!(1, results.en_passants);
-        assert_eq!(91, results.castles);
-        assert_eq!(0, results.promotions);
-        assert_eq!(3, results.checks);
-        assert_eq!(0, results.checkmates);
+        //assert_eq!(351, results.captures);
+        //assert_eq!(1, results.en_passants);
+        //assert_eq!(91, results.castles);
+        //assert_eq!(0, results.promotions);
+        //assert_eq!(3, results.checks);
+        //assert_eq!(0, results.checkmates);
     }
 
     #[test]
@@ -184,12 +185,52 @@ mod kiwipete {
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             3);
         assert_eq!(97862, results.nodes);
-        assert_eq!(17102, results.captures);
-        assert_eq!(45, results.en_passants);
-        assert_eq!(3162, results.castles);
-        assert_eq!(0, results.promotions);
-        assert_eq!(993, results.checks);
-        assert_eq!(1, results.checkmates);
+        //assert_eq!(17102, results.captures);
+        //assert_eq!(45, results.en_passants);
+        //assert_eq!(3162, results.castles);
+        //assert_eq!(0, results.promotions);
+        //assert_eq!(993, results.checks);
+        //assert_eq!(1, results.checkmates);
+    }
+}
+
+mod position_4 {
+    use super::*;
+
+    #[test]
+    fn perft_1() {
+        apollo_engine::initialize();
+        let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 1);
+        assert_eq!(6, results.nodes);
+    }
+
+    #[test]
+    fn perft_2() {
+        apollo_engine::initialize();
+        let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 2);
+        assert_eq!(264, results.nodes);
+    }
+
+    #[test]
+    fn perft_3() {
+        apollo_engine::initialize();
+        let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 3);
+        assert_eq!(9467, results.nodes);
+    }
+
+    #[test]
+    fn perft_4() {
+        apollo_engine::initialize();
+        let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4);
+        assert_eq!(422333, results.nodes);
+    }
+
+    #[test]
+    #[ignore]
+    fn perft_5() {
+        apollo_engine::initialize();
+        let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 5);
+        assert_eq!(15833292, results.nodes);
     }
 }
 
@@ -229,6 +270,7 @@ mod position_5 {
     }
 
     #[test]
+    #[ignore]
     fn perft_5() {
         apollo_engine::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",

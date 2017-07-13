@@ -118,7 +118,7 @@ fn add_kings(pos: &Position, moves: &mut Vec<Move>) {
     let allied_piece_map = pos.color(color);
     let piece_map = enemy_piece_map | allied_piece_map;
     assert!(pos.kings(color).count() <= 1);
-    if let Some(king) = pos.kings(color).iter().next() {
+    if let Some(king) = pos.kings(color).first() {
         for atk in attacks::king_attacks(king) {
             if enemy_piece_map.test(atk) {
                 moves.push(Move::capture(king, atk));

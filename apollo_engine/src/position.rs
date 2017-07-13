@@ -670,7 +670,11 @@ impl Position {
                 board.set(pawn);
             }
 
-            // TODO: en passant
+            if let Some(ep_square) = self.en_passant_square {
+                if ep_square == square && attacks::pawn_attacks(pawn, color).test(ep_square) {
+                    board.set(pawn);
+                }
+            }
         }
 
         for opp_king in self.kings(color) {
@@ -694,7 +698,7 @@ impl Position {
 
         // if there are kings on the board, there should be one of them
         assert!(kings.count() == 1);
-        let king = kings.iter().next().unwrap();
+        let king = kings.first().unwrap();
 
         // the player whose king this belongs to is in check if there exists
         // an attack by the opponent that includes this square.

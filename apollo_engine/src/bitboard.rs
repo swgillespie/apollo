@@ -142,6 +142,11 @@ impl Bitboard {
     pub const fn empty(&self) -> bool {
         self.bits == 0
     }
+
+    /// Retrieves one piece in the set represented by this bitboard.
+    pub fn first(&self) -> Option<Square> {
+        self.into_iter().next()
+    }
 }
 
 impl fmt::Display for Bitboard {
