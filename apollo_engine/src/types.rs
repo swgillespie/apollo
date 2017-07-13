@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 use num_traits::FromPrimitive;
+use bitboard::Bitboard;
 use std::fmt;
 
 /// Little-endian rank-file (LERF) mapping from squares to bits in a bitboard.
@@ -13,14 +14,70 @@ use std::fmt;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Square {
-   A1 = 0,  B1 = 1,  C1 = 2,  D1 = 3,  E1 = 4,  F1 = 5,  G1 = 6,  H1 = 7,
-   A2 = 8,  B2 = 9,  C2 = 10, D2 = 11, E2 = 12, F2 = 13, G2 = 14, H2 = 15,
-   A3 = 16, B3 = 17, C3 = 18, D3 = 19, E3 = 20, F3 = 21, G3 = 22, H3 = 23,
-   A4 = 24, B4 = 25, C4 = 26, D4 = 27, E4 = 28, F4 = 29, G4 = 30, H4 = 31,
-   A5 = 32, B5 = 33, C5 = 34, D5 = 35, E5 = 36, F5 = 37, G5 = 38, H5 = 39,
-   A6 = 40, B6 = 41, C6 = 42, D6 = 43, E6 = 44, F6 = 45, G6 = 46, H6 = 47,
-   A7 = 48, B7 = 49, C7 = 50, D7 = 51, E7 = 52, F7 = 53, G7 = 54, H7 = 55,
-   A8 = 56, B8 = 57, C8 = 58, D8 = 59, E8 = 60, F8 = 61, G8 = 62, H8 = 63
+    A1 = 0,
+    B1 = 1,
+    C1 = 2,
+    D1 = 3,
+    E1 = 4,
+    F1 = 5,
+    G1 = 6,
+    H1 = 7,
+    A2 = 8,
+    B2 = 9,
+    C2 = 10,
+    D2 = 11,
+    E2 = 12,
+    F2 = 13,
+    G2 = 14,
+    H2 = 15,
+    A3 = 16,
+    B3 = 17,
+    C3 = 18,
+    D3 = 19,
+    E3 = 20,
+    F3 = 21,
+    G3 = 22,
+    H3 = 23,
+    A4 = 24,
+    B4 = 25,
+    C4 = 26,
+    D4 = 27,
+    E4 = 28,
+    F4 = 29,
+    G4 = 30,
+    H4 = 31,
+    A5 = 32,
+    B5 = 33,
+    C5 = 34,
+    D5 = 35,
+    E5 = 36,
+    F5 = 37,
+    G5 = 38,
+    H5 = 39,
+    A6 = 40,
+    B6 = 41,
+    C6 = 42,
+    D6 = 43,
+    E6 = 44,
+    F6 = 45,
+    G6 = 46,
+    H6 = 47,
+    A7 = 48,
+    B7 = 49,
+    C7 = 50,
+    D7 = 51,
+    E7 = 52,
+    F7 = 53,
+    G7 = 54,
+    H7 = 55,
+    A8 = 56,
+    B8 = 57,
+    C8 = 58,
+    D8 = 59,
+    E8 = 60,
+    F8 = 61,
+    G8 = 62,
+    H8 = 63,
 }
 
 impl FromPrimitive for Square {
@@ -31,15 +88,71 @@ impl FromPrimitive for Square {
     fn from_u64(n: u64) -> Option<Square> {
         use types::Square::*;
         let result = match n {
-            0 => A1,  1 => B1,  2 => C1,  3 => D1,  4 => E1,  5 => F1,  6 => G1,  7  => H1,
-            8 => A2,  9 => B2,  10 => C2, 11 => D2, 12 => E2, 13 => F2, 14 => G2, 15 => H2,
-            16 => A3, 17 => B3, 18 => C3, 19 => D3, 20 => E3, 21 => F3, 22 => G3, 23 => H3,
-            24 => A4, 25 => B4, 26 => C4, 27 => D4, 28 => E4, 29 => F4, 30 => G4, 31 => H4, 
-            32 => A5, 33 => B5, 34 => C5, 35 => D5, 36 => E5, 37 => F5, 38 => G5, 39 => H5, 
-            40 => A6, 41 => B6, 42 => C6, 43 => D6, 44 => E6, 45 => F6, 46 => G6, 47 => H6, 
-            48 => A7, 49 => B7, 50 => C7, 51 => D7, 52 => E7, 53 => F7, 54 => G7, 55 => H7, 
-            56 => A8, 57 => B8, 58 => C8, 59 => D8, 60 => E8, 61 => F8, 62 => G8, 63 => H8,
-            _ => return None
+            0 => A1,
+            1 => B1,
+            2 => C1,
+            3 => D1,
+            4 => E1,
+            5 => F1,
+            6 => G1,
+            7 => H1,
+            8 => A2,
+            9 => B2,
+            10 => C2,
+            11 => D2,
+            12 => E2,
+            13 => F2,
+            14 => G2,
+            15 => H2,
+            16 => A3,
+            17 => B3,
+            18 => C3,
+            19 => D3,
+            20 => E3,
+            21 => F3,
+            22 => G3,
+            23 => H3,
+            24 => A4,
+            25 => B4,
+            26 => C4,
+            27 => D4,
+            28 => E4,
+            29 => F4,
+            30 => G4,
+            31 => H4, 
+            32 => A5,
+            33 => B5,
+            34 => C5,
+            35 => D5,
+            36 => E5,
+            37 => F5,
+            38 => G5,
+            39 => H5, 
+            40 => A6,
+            41 => B6,
+            42 => C6,
+            43 => D6,
+            44 => E6,
+            45 => F6,
+            46 => G6,
+            47 => H6, 
+            48 => A7,
+            49 => B7,
+            50 => C7,
+            51 => D7,
+            52 => E7,
+            53 => F7,
+            54 => G7,
+            55 => H7, 
+            56 => A8,
+            57 => B8,
+            58 => C8,
+            59 => D8,
+            60 => E8,
+            61 => F8,
+            62 => G8,
+            63 => H8,
+            _ => return None,
         };
 
         Some(result)
@@ -63,6 +176,33 @@ impl Square {
     pub fn file(self) -> File {
         FromPrimitive::from_u64((self as u64) & 7).unwrap()
     }
+
+    pub fn towards(self, dir: Direction) -> Option<Square> {
+        match dir {
+            Direction::North | Direction::South => {
+                let dir_vec = dir.as_vector();
+                FromPrimitive::from_i8(self as i8 + dir_vec)
+            }
+            Direction::NorthWest | Direction::West | Direction::SouthWest => {
+                let a_file = Bitboard::all().file(File::A);
+                if a_file.test(self) {
+                    return None;
+                }
+
+                let dir_vec = dir.as_vector();
+                FromPrimitive::from_i8(self as i8 + dir_vec)
+            }
+            Direction::NorthEast | Direction::East | Direction::SouthEast => {
+                let h_file = Bitboard::all().file(File::H);
+                if h_file.test(self) {
+                    return None;
+                }
+
+                let dir_vec = dir.as_vector();
+                FromPrimitive::from_i8(self as i8 + dir_vec)
+            }
+        }
+    }
 }
 
 impl fmt::Display for Square {
@@ -75,8 +215,14 @@ impl fmt::Display for Square {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Rank {
-    Rank1 = 0, Rank2 = 1, Rank3 = 2, Rank4 = 3,
-    Rank5 = 4, Rank6 = 5, Rank7 = 6, Rank8 = 7
+    Rank1 = 0,
+    Rank2 = 1,
+    Rank3 = 2,
+    Rank4 = 3,
+    Rank5 = 4,
+    Rank6 = 5,
+    Rank7 = 6,
+    Rank8 = 7,
 }
 
 impl Rank {
@@ -90,7 +236,7 @@ impl Rank {
             '6' => Rank::Rank6,
             '7' => Rank::Rank7,
             '8' => Rank::Rank8,
-            _ => return None
+            _ => return None,
         };
 
         Some(result)
@@ -112,7 +258,7 @@ impl FromPrimitive for Rank {
             5 => Rank::Rank6,
             6 => Rank::Rank7,
             7 => Rank::Rank8,
-            _ => return None
+            _ => return None,
         };
 
         Some(result)
@@ -129,7 +275,7 @@ impl fmt::Display for Rank {
             Rank::Rank5 => '5',
             Rank::Rank6 => '6',
             Rank::Rank7 => '7',
-            Rank::Rank8 => '8'
+            Rank::Rank8 => '8',
         };
 
         write!(f, "{}", chr)
@@ -140,7 +286,14 @@ impl fmt::Display for Rank {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum File {
-    A = 0, B = 1, C = 2, D = 3, E = 4, F = 5, G = 6, H = 7
+    A = 0,
+    B = 1,
+    C = 2,
+    D = 3,
+    E = 4,
+    F = 5,
+    G = 6,
+    H = 7,
 }
 
 impl File {
@@ -154,7 +307,7 @@ impl File {
             'f' => File::F,
             'g' => File::G,
             'h' => File::H,
-            _ => return None
+            _ => return None,
         };
 
         Some(result)
@@ -176,7 +329,7 @@ impl FromPrimitive for File {
             5 => File::F,
             6 => File::G,
             7 => File::H,
-            _ => return None
+            _ => return None,
         };
 
         Some(result)
@@ -193,7 +346,7 @@ impl fmt::Display for File {
             File::E => 'e',
             File::F => 'f',
             File::G => 'g',
-            File::H => 'h'
+            File::H => 'h',
         };
 
         write!(f, "{}", chr)
@@ -205,14 +358,14 @@ impl fmt::Display for File {
 #[repr(u8)]
 pub enum Color {
     White,
-    Black
+    Black,
 }
 
 impl Color {
     pub fn toggle(self) -> Color {
         match self {
             Color::White => Color::Black,
-            Color::Black => Color::White
+            Color::Black => Color::White,
         }
     }
 }
@@ -221,12 +374,12 @@ impl Color {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum PieceKind {
-    Pawn    = 0,
-    Knight  = 1,
-    Bishop  = 2,
-    Rook    = 3,
-    Queen   = 4,
-    King    = 5
+    Pawn = 0,
+    Knight = 1,
+    Bishop = 2,
+    Rook = 3,
+    Queen = 4,
+    King = 5,
 }
 
 impl FromPrimitive for PieceKind {
@@ -242,10 +395,23 @@ impl FromPrimitive for PieceKind {
             3 => PieceKind::Rook,
             4 => PieceKind::Queen,
             5 => PieceKind::King,
-            _ => return None
+            _ => return None,
         };
 
         Some(val)
+    }
+}
+
+impl PieceKind {
+    pub fn as_char(self) -> char {
+        match self {
+            PieceKind::Pawn => 'p',
+            PieceKind::Knight => 'n',
+            PieceKind::Bishop => 'b',
+            PieceKind::Rook => 'r',
+            PieceKind::Queen => 'q',
+            PieceKind::King => 'k'
+        }
     }
 }
 
@@ -253,7 +419,7 @@ impl FromPrimitive for PieceKind {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Piece {
     pub kind: PieceKind,
-    pub color: Color
+    pub color: Color,
 }
 
 impl Piece {
@@ -261,13 +427,50 @@ impl Piece {
     pub fn new(kind: PieceKind, color: Color) -> Piece {
         Piece {
             kind: kind,
-            color: color
+            color: color,
+        }
+    }
+
+    pub fn from_char(c: char) -> Option<Piece> {
+        let piece = match c {
+            'p' => Piece::new(PieceKind::Pawn, Color::Black),
+            'P' => Piece::new(PieceKind::Pawn, Color::White),
+            'n' => Piece::new(PieceKind::Knight, Color::Black),
+            'N' => Piece::new(PieceKind::Knight, Color::White),
+            'r' => Piece::new(PieceKind::Rook, Color::Black),
+            'R' => Piece::new(PieceKind::Rook, Color::White),
+            'b' => Piece::new(PieceKind::Bishop, Color::Black),
+            'B' => Piece::new(PieceKind::Bishop, Color::White),
+            'q' => Piece::new(PieceKind::Queen, Color::Black),
+            'Q' => Piece::new(PieceKind::Queen, Color::White),
+            'k' => Piece::new(PieceKind::King, Color::Black),
+            'K' => Piece::new(PieceKind::King, Color::White),
+            _ => return None,
+        };
+
+        Some(piece)
+    }
+
+    pub fn as_char(&self) -> char {
+        match *self {
+            Piece { kind: PieceKind::Pawn, color: Color::White } => 'P',
+            Piece { kind: PieceKind::Pawn, color: Color::Black } => 'p',
+            Piece { kind: PieceKind::Knight, color: Color::White } => 'N',
+            Piece { kind: PieceKind::Knight, color: Color::Black } => 'n',
+            Piece { kind: PieceKind::Bishop, color: Color::White } => 'B',
+            Piece { kind: PieceKind::Bishop, color: Color::Black } => 'b',
+            Piece { kind: PieceKind::Queen, color: Color::White } => 'Q',
+            Piece { kind: PieceKind::Queen, color: Color::Black } => 'q',
+            Piece { kind: PieceKind::Rook, color: Color::White } => 'R',
+            Piece { kind: PieceKind::Rook, color: Color::Black } => 'r',
+            Piece { kind: PieceKind::King, color: Color::White } => 'K',
+            Piece { kind: PieceKind::King, color: Color::Black } => 'k',
         }
     }
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     North,
     NorthEast,
@@ -276,7 +479,7 @@ pub enum Direction {
     South,
     SouthWest,
     West,
-    NorthWest
+    NorthWest,
 }
 
 impl Direction {
@@ -291,7 +494,7 @@ impl Direction {
             Direction::South => -8,
             Direction::SouthWest => -9,
             Direction::West => -1,
-            Direction::NorthWest => 7
+            Direction::NorthWest => 7,
         }
     }
 }

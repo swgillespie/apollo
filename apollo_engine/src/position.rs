@@ -5,10 +5,14 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+use std::fmt::{self, Debug, Display, Write};
+use std::vec::IntoIter;
 use num_traits::FromPrimitive;
 use bitboard::Bitboard;
 use types::{self, Square, Piece, Color, CastleStatus, Rank, File, PieceKind, Direction};
 use moves::Move;
+use attacks;
+use movegen;
 
 /// Possible errors that can arise when parsing a FEN string into
 /// a `Position`.
@@ -31,7 +35,7 @@ pub enum FenParseError {
 /// A Position encapulsates all of the state of a single position in chess. It
 /// contains all informatio necessary to compute legal moves and advance the
 /// game. Moves can be applied to Positions to advance the game state.
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct Position {
     boards_by_piece: [Bitboard; 12],
     boards_by_color: [Bitboard; 2],
@@ -58,7 +62,15 @@ impl Position {
 
     /// Constructs a new position from a FEN representation of a board
     /// position.
-    pub fn from_fen<S: AsRef<str>>(_fen: S) -> Result<Position, FenParseError> {
+    ///
+    /// # Example
+    /// ```
+    /// use apollo_engine::{Position, Square};
+    ///
+    /// let pos = Position::from_fen("8/8/8/8/8/8/2R5/8 w KQkq - 0 1").unwrap();
+    /// assert!(pos.piece_at(Square::C2).is_some());
+    /// ```
+    pub fn from_fen<S: AsRef<str>>(fen: S) -> Result<Position, FenParseError> {
         use std::str::Chars;
         use std::iter::Peekable;
 
@@ -83,26 +95,6 @@ impl Position {
             } else {
                 Err(FenParseError::UnexpectedEnd)
             }
-        }
-
-        fn piece_from_char(c: char) -> Result<Piece, FenParseError> {
-            let piece = match c {
-                'p' => Piece::new(PieceKind::Pawn, Color::Black),
-                'P' => Piece::new(PieceKind::Pawn, Color::White),
-                'n' => Piece::new(PieceKind::Knight, Color::Black),
-                'N' => Piece::new(PieceKind::Knight, Color::White),
-                'r' => Piece::new(PieceKind::Rook, Color::Black),
-                'R' => Piece::new(PieceKind::Rook, Color::White),
-                'b' => Piece::new(PieceKind::Bishop, Color::Black),
-                'B' => Piece::new(PieceKind::Bishop, Color::White),
-                'q' => Piece::new(PieceKind::Queen, Color::Black),
-                'Q' => Piece::new(PieceKind::Queen, Color::White),
-                'k' => Piece::new(PieceKind::King, Color::Black),
-                'K' => Piece::new(PieceKind::King, Color::White),
-                _ => return Err(FenParseError::UnknownPiece),
-            };
-
-            Ok(piece)
         }
 
         fn eat_side_to_move<'a>(iter: &mut Stream<'a>) -> Result<Color, FenParseError> {
@@ -201,7 +193,7 @@ impl Position {
         }
 
         let mut pos = Position::new();
-        let str_ref = _fen.as_ref();
+        let str_ref = fen.as_ref();
         let ref mut iter = str_ref.chars().peekable();
         for rank in ((Rank::Rank1 as usize)...(Rank::Rank8 as usize)).rev() {
             let mut file = File::A as usize;
@@ -224,7 +216,12 @@ impl Position {
                 }
 
                 // if it's not a digit, it represents a piece.
-                let piece = piece_from_char(c)?;
+                let piece = if let Some(piece) = Piece::from_char(c) {
+                    piece
+                } else {
+                    return Err(FenParseError::UnknownPiece);
+                };
+
                 let file_enum = FromPrimitive::from_u64(file as u64).unwrap();
                 let rank_enum = FromPrimitive::from_u64(rank as u64).unwrap();
                 let square = Square::of(rank_enum, file_enum);
@@ -251,9 +248,107 @@ impl Position {
         Ok(pos)
     }
 
+    /// Returns a FEN representation of this position.
+    ///
+    /// # Example
+    /// ```
+    /// use apollo_engine::Position;
+    ///
+    /// let fen = "8/8/8/4B3/8/8/8/8 w KQkq - 0 1";
+    /// let position = Position::from_fen(fen).unwrap();
+    /// assert_eq!(fen, position.as_fen());
+    /// ```
+    pub fn as_fen(&self) -> String {
+        let mut string = String::new();
+        for rank_idx in ((Rank::Rank1 as usize)...(Rank::Rank8 as usize)).rev() {
+            let rank = FromPrimitive::from_u64(rank_idx as u64).unwrap();
+            let mut empty_squares = 0;
+            for file_idx in (File::A as usize)...(File::H as usize) {
+                let file = FromPrimitive::from_u64(file_idx as u64).unwrap();
+                let sq = Square::of(rank, file);
+                if let Some(piece) = self.piece_at(sq) {
+                    if empty_squares != 0 {
+                        write!(&mut string, "{}", empty_squares).unwrap();
+                    }
+
+                    string.push(piece.as_char());
+                    empty_squares = 0;
+                } else {
+                    empty_squares += 1;
+                }
+            }
+
+            if empty_squares != 0 {
+                write!(&mut string, "{}", empty_squares).unwrap();
+            }
+            if rank != Rank::Rank1 {
+                string.push('/');
+            }
+        }
+
+        string.push(' ');
+        let side_char = match self.side_to_move {
+            Color::White => 'w',
+            Color::Black => 'b',
+        };
+        string.push(side_char);
+        string.push(' ');
+        let mut someone_can_castle = false;
+        if self.can_castle_kingside(Color::White) {
+            string.push('K');
+            someone_can_castle = true;
+        }
+
+        if self.can_castle_queenside(Color::White) {
+            string.push('Q');
+            someone_can_castle = true;
+        }
+
+        if self.can_castle_kingside(Color::Black) {
+            string.push('k');
+            someone_can_castle = true;
+        }
+
+        if self.can_castle_queenside(Color::Black) {
+            string.push('q');
+            someone_can_castle = true;
+        }
+
+        if !someone_can_castle {
+            string.push('-');
+        }
+
+        string.push(' ');
+        if let Some(ep_square) = self.en_passant_square {
+            write!(&mut string, "{}", ep_square).unwrap();
+        } else {
+            string.push('-');
+        }
+
+        string.push(' ');
+        write!(&mut string,
+               "{} {}",
+               self.halfmove_clock,
+               self.fullmove_clock)
+                .unwrap();
+        string
+    }
+
     /// Adds a piece to the board at the given square, returning `Ok` if
     /// the adding was successful (i.e. the space was unoccupied) and `Err`
     /// if the space was occupied.
+    ///
+    /// # Example
+    /// ```
+    /// use apollo_engine::{Square, Piece, PieceKind, Position, Color};
+    ///
+    /// let mut position = Position::new();
+    /// let piece = Piece::new(PieceKind::Pawn, Color::White);
+    /// position.add_piece(Square::E4, piece);
+    /// let on_board = position.piece_at(Square::E4).unwrap();
+    /// assert_eq!(on_board.kind, PieceKind::Pawn);
+    /// assert_eq!(on_board.color, Color::White);
+    /// ```
     pub fn add_piece(&mut self, square: Square, piece: Piece) -> Result<(), ()> {
         if self.piece_at(square).is_some() {
             return Err(());
@@ -316,11 +411,10 @@ impl Position {
             let target_square = if mov.is_en_passant() {
                 let dir = match pos.side_to_move {
                     Color::White => Direction::South,
-                    Color::Black => Direction::North
+                    Color::Black => Direction::North,
                 };
 
-                let ep_square = pos.en_passant_square()
-                    .expect("ep-move without ep-square");
+                let ep_square = pos.en_passant_square().expect("ep-move without ep-square");
                 FromPrimitive::from_i8(ep_square as i8 + dir.as_vector())
                     .expect("ep-capture square off board")
             } else {
@@ -390,25 +484,31 @@ impl Position {
         }
 
         if mov.is_kingside_castle() || mov.is_queenside_castle() {
-            // castles are encoded as King captures Rook. We need to remove the
-            // rook from the board and add it back at the correct location.
-            let rook = self.piece_at(mov.destination()).expect("rook not at destination");
-            assert_eq!(PieceKind::Rook, rook.kind);
-            self.remove_piece(mov.destination()).expect("empty castle destination");
-            // add the rook back at the rook castle location.
-            let new_rook_sq = {
-                let dir = if mov.is_kingside_castle() {
-                    Direction::West
+            // castles are encoded based on the king's start and stop position.
+            // notably, the rook is not at the move destination.
+            let (new_rook_sq, rook_sq) = {
+                // regardless of how we are castling, the rook appears
+                // adjacent to the king.
+                let (post_castle_dir, pre_castle_dir, squares) = if mov.is_kingside_castle() {
+                    (Direction::West, Direction::East, 1)
                 } else {
-                    Direction::East
+                    (Direction::East, Direction::West, 2)
                 };
 
-                // two moves in the chosen direction
-                let vector = dir.as_vector() * 2;
-                FromPrimitive::from_i8(mov.destination() as i8 + vector)
-                    .expect("rook castle square not on board")
+                let vec = post_castle_dir.as_vector();
+                let new_rook_sq = FromPrimitive::from_i8(mov.destination() as i8 + vec)
+                    .expect("rook castle square not on board");
+
+                let other_vec = pre_castle_dir.as_vector() * squares;
+                let rook_sq = FromPrimitive::from_i8(mov.destination() as i8 + other_vec)
+                    .expect("rook castle source square not on board");
+                (new_rook_sq, rook_sq)
             };
 
+            let rook = self.piece_at(rook_sq).expect("rook not at destination");
+            assert_eq!(PieceKind::Rook, rook.kind);
+            self.remove_piece(rook_sq).expect("empty castle destination");
+            // add the rook back at the rook castle location.
             self.add_piece(new_rook_sq, rook).expect("rook castle square occupied");
         }
 
@@ -423,7 +523,7 @@ impl Position {
             // double pawn pushes set the EP-square
             let ep_dir = match self.side_to_move {
                 Color::White => Direction::South,
-                Color::Black => Direction::North
+                Color::Black => Direction::North,
             };
 
             let sq = FromPrimitive::from_i8(mov.destination() as i8 + ep_dir.as_vector())
@@ -449,22 +549,24 @@ impl Position {
                 PieceKind::Rook => {
                     let (kingside_rook, queenside_rook) = match self.side_to_move {
                         Color::White => (Square::H1, Square::A1),
-                        Color::Black => (Square::H8, Square::A8)
+                        Color::Black => (Square::H8, Square::A8),
                     };
 
-                    if self.can_castle_queenside(self.side_to_move) && mov.source() == queenside_rook {
+                    if self.can_castle_queenside(self.side_to_move) &&
+                       mov.source() == queenside_rook {
                         let mask = match self.side_to_move {
                             Color::White => types::WHITE_O_O_O,
-                            Color::Black => types::BLACK_O_O_O
+                            Color::Black => types::BLACK_O_O_O,
                         };
 
                         self.castle_status &= !mask;
                     }
 
-                    if self.can_castle_kingside(self.side_to_move) && mov.source() == kingside_rook {
+                    if self.can_castle_kingside(self.side_to_move) &&
+                       mov.source() == kingside_rook {
                         let mask = match self.side_to_move {
                             Color::White => types::WHITE_O_O,
-                            Color::Black => types::BLACK_O_O
+                            Color::Black => types::BLACK_O_O,
                         };
 
                         self.castle_status &= !mask;
@@ -488,6 +590,124 @@ impl Position {
             // if it's white's turn to move again, a turn has ended.
             self.fullmove_clock += 1;
         }
+    }
+
+    fn pieces(&self, color: Color, kind: PieceKind) -> Bitboard {
+        let offset = match color {
+            Color::White => 0,
+            Color::Black => 6,
+        };
+
+        self.boards_by_piece[offset + kind as usize]
+    }
+
+    pub fn pawns(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::Pawn)
+    }
+
+    pub fn knights(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::Knight)
+    }
+
+    pub fn bishops(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::Bishop)
+    }
+
+    pub fn rooks(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::Rook)
+    }
+
+    pub fn queens(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::Queen)
+    }
+
+    pub fn kings(&self, color: Color) -> Bitboard {
+        self.pieces(color, PieceKind::King)
+    }
+
+    pub fn white(&self) -> Bitboard {
+        self.color(Color::White)
+    }
+
+    pub fn black(&self) -> Bitboard {
+        self.color(Color::Black)
+    }
+
+    pub fn color(&self, color: Color) -> Bitboard {
+        self.boards_by_color[color as usize]
+    }
+
+    pub fn squares_attacking(&self, color: Color, square: Square) -> Bitboard {
+        let occupancy = self.boards_by_color[Color::White as usize] |
+                        self.boards_by_color[Color::Black as usize];
+        let mut board = Bitboard::none();
+        for queen in self.queens(color) {
+            if attacks::queen_attacks(queen, occupancy).test(square) {
+                board.set(queen);
+            }
+        }
+
+        for rook in self.rooks(color) {
+            if attacks::rook_attacks(rook, occupancy).test(square) {
+                board.set(rook);
+            }
+        }
+
+        for bishop in self.bishops(color) {
+            if attacks::bishop_attacks(bishop, occupancy).test(square) {
+                board.set(bishop);
+            }
+        }
+
+        for knight in self.knights(color) {
+            if attacks::knight_attacks(knight).test(square) {
+                board.set(knight);
+            }
+        }
+
+        for pawn in self.pawns(color) {
+            if attacks::pawn_attacks(pawn, color).test(square) {
+                board.set(pawn);
+            }
+
+            // TODO: en passant
+        }
+
+        for opp_king in self.kings(color) {
+            if attacks::king_attacks(opp_king).test(square) {
+                board.set(opp_king);
+            }
+        }
+
+        board
+    }
+
+    /// Whether or not the player whose turn it is to move is in check.
+    pub fn is_check(&self, color: Color) -> bool {
+        let kings = self.kings(color);
+
+        // if there's no king (e.g. unit test or puzzle scenario),
+        // there's no check
+        if kings.count() == 0 {
+            return false;
+        }
+
+        // if there are kings on the board, there should be one of them
+        assert!(kings.count() == 1);
+        let king = kings.iter().next().unwrap();
+
+        // the player whose king this belongs to is in check if there exists
+        // an attack by the opponent that includes this square.
+        !self.squares_attacking(color.toggle(), king).empty()
+    }
+
+    pub fn pseudolegal_moves(&self) -> IntoIter<Move> {
+        // it seems to be the case that there does not exist
+        // a chess position with more than 218 moves available
+        // to it.
+        let mut moves = Vec::with_capacity(218);
+        movegen::generate_moves(self, &mut moves);
+        moves.into_iter()
     }
 
     /// Returns the current en-passant square for this position, if
@@ -527,5 +747,43 @@ impl Position {
             Color::White => self.castle_status.contains(types::WHITE_O_O_O),
             Color::Black => self.castle_status.contains(types::BLACK_O_O_O),
         }
+    }
+}
+
+impl Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let fen = self.as_fen();
+        f.debug_tuple("Position").field(&fen).finish()
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        for rank_idx in ((Rank::Rank1 as u8)...(Rank::Rank8 as u8)).rev() {
+            let rank: Rank = FromPrimitive::from_u8(rank_idx).unwrap();
+            for file_idx in (File::A as u8)...(File::H as u8) {
+                let file: File = FromPrimitive::from_u8(file_idx).unwrap();
+                let sq = Square::of(rank, file);
+                if let Some(piece) = self.piece_at(sq) {
+                    write!(f, " {} ", piece.as_char())?;
+                } else {
+                    write!(f, " . ")?;
+                }
+            }
+
+            writeln!(f, "| {}", (rank_idx + 49) as char)?
+        }
+
+        for _ in (File::A as u8)...(File::H as u8) {
+            write!(f, "---")?;
+        }
+
+        writeln!(f, "")?;
+        for file_idx in (File::A as u8)...(File::H as u8) {
+            write!(f, " {} ", (file_idx + 97) as char)?
+        }
+
+        writeln!(f, "")?;
+        Ok(())
     }
 }

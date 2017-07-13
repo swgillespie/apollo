@@ -41,6 +41,7 @@
 //!
 //! Thanks to https://chessprogramming.wikispaces.com/Encoding+Moves
 //! for the details.
+use std::fmt::{self, Write};
 use num_traits::FromPrimitive;
 use types::{Square, PieceKind};
 
@@ -54,6 +55,40 @@ const ATTR_MASK: u16 = 0x000F;
 
 /// A move, recognized by the apollo engine. It is designed to be as
 /// compact as possible.
+/// ## Encoding
+/// The encoding of a move is like this:
+///
+///  * 6 bits - source square
+///  * 6 bits - destination square
+///  * 1 bit  - promotion bit
+///  * 1 bit  - capture bit
+///  * 1 bit  - "special 0" square
+///  * 1 bit  - "special 1" square
+///
+/// The "special" bits are overloaded, because chess has a
+/// number of "special" moves that do not fit nicely into
+/// a compact representation. Here is a full table of
+/// the encoding strategy:
+///
+/// | Promo | Capt  | Spc 0 | Spc 1 | Move                   |
+/// |-------|-------|-------|-------|------------------------|
+/// | 0     | 0     | 0     | 0     | Quiet                  |
+/// | 0     | 0     | 0     | 1     | Double Pawn            |
+/// | 0     | 0     | 1     | 0     | King Castle            |
+/// | 0     | 0     | 1     | 1     | Queen Castle           |
+/// | 0     | 1     | 0     | 0     | Capture                |
+/// | 0     | 1     | 0     | 1     | En Passant Capture     |
+/// | 1     | 0     | 0     | 0     | Knight Promote         |
+/// | 1     | 0     | 0     | 1     | Bishop Promote         |
+/// | 1     | 0     | 1     | 0     | Rook Promote           |
+/// | 1     | 0     | 1     | 1     | Queen Promote          |
+/// | 1     | 1     | 0     | 0     | Knight Promote Capture |
+/// | 1     | 1     | 0     | 1     | Bishop Promote Capture |
+/// | 1     | 1     | 1     | 0     | Rook Promote Capture   |
+/// | 1     | 1     | 1     | 1     | Queen Promote Capture  |
+///
+/// Thanks to https://chessprogramming.wikispaces.com/Encoding+Moves
+/// for the details.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Move(u16);
 
@@ -188,6 +223,42 @@ impl Move {
     pub fn is_queenside_castle(self) -> bool {
         (self.0 & ATTR_MASK) == 3
     }
+
+    /// Returns an UCI-compatible string representation of
+    /// this move.
+    /// # Example
+    /// ```
+    /// use apollo_engine::{Move, Square};
+    ///
+    /// let mov = Move::quiet(Square::E4, Square::E5);
+    /// assert_eq!("e4e5", mov.as_uci());
+    /// ```
+    pub fn as_uci(self) -> String {
+        let mut buf = String::new();
+        if !self.is_promotion() {
+            write!(&mut buf, "{}{}", self.source(), self.destination()).unwrap();
+        } else {
+            write!(&mut buf,
+                   "{}{}{}",
+                   self.source(),
+                   self.destination(),
+                   self.promotion_piece().as_char())
+                    .unwrap();
+        }
+
+        buf
+    }
+}
+
+impl fmt::Display for Move {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f,
+               "{} -> {} (capture: {}, promotion: {})",
+               self.source(),
+               self.destination(),
+               self.is_capture(),
+               self.is_promotion())
+    }
 }
 
 #[cfg(test)]
@@ -296,5 +367,23 @@ mod tests {
         assert!(mv.is_queenside_castle());
         assert!(!mv.is_kingside_castle());
         assert!(!mv.is_capture());
+    }
+
+    #[test]
+    fn uci_smoke() {
+        let mv = Move::quiet(Square::A1, Square::A2);
+        assert_eq!("a1a2", mv.as_uci());
+    }
+
+    #[test]
+    fn uci_promote() {
+        let mv = Move::promotion(Square::A7, Square::A8, PieceKind::Queen);
+        assert_eq!("a7a8q", mv.as_uci());
+    }
+
+    #[test]
+    fn uci_kingside_castle() {
+        let mv = Move::kingside_castle(Square::E1, Square::G1);
+        assert_eq!("e1g1", mv.as_uci());
     }
 }

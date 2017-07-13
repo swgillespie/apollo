@@ -10,7 +10,8 @@ use apollo_engine::{Position, Move, Square, Color, PieceKind};
 
 #[test]
 fn smoke_test_opening_pawn() {
-    let mut pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 2 1").unwrap();
+    let mut pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 2 1")
+        .unwrap();
 
     // nothing fancy, move a pawn up one.
     pos.apply_move(Move::quiet(Square::E2, Square::E3));
@@ -90,14 +91,14 @@ fn non_pawn_quiet_move() {
 
 #[test]
 fn moving_king_castle_status() {
-   let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
+    let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
 
-   // white's turn to move, white moves its king.
-   pos.apply_move(Move::quiet(Square::E1, Square::E2));
+    // white's turn to move, white moves its king.
+    pos.apply_move(Move::quiet(Square::E1, Square::E2));
 
-   // white can't castle anymore.
-   assert!(!pos.can_castle_kingside(Color::White));
-   assert!(!pos.can_castle_queenside(Color::White));
+    // white can't castle anymore.
+    assert!(!pos.can_castle_kingside(Color::White));
+    assert!(!pos.can_castle_queenside(Color::White));
 }
 
 #[test]
@@ -198,4 +199,36 @@ fn basic_promote_capture() {
     let queen = pos.piece_at(Square::F8).unwrap();
     assert_eq!(Color::White, queen.color);
     assert_eq!(PieceKind::Queen, queen.kind);
+}
+
+#[test]
+fn queenside_castle() {
+    let mut pos = Position::from_fen("8/8/8/8/8/8/8/R3K3 w Q - 0 1").unwrap();
+
+    // white to move, white castles queenside
+    pos.apply_move(Move::queenside_castle(Square::E1, Square::C1));
+
+    let rook = pos.piece_at(Square::D1).unwrap();
+    assert_eq!(Color::White, rook.color);
+    assert_eq!(PieceKind::Rook, rook.kind);
+
+    let king = pos.piece_at(Square::C1).unwrap();
+    assert_eq!(Color::White, king.color);
+    assert_eq!(PieceKind::King, king.kind);
+}
+
+#[test]
+fn kingside_castle() {
+    let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w K - 0 1").unwrap();
+    
+    // white to move, white castles kingside
+    pos.apply_move(Move::kingside_castle(Square::E1, Square::G1));
+
+    let rook = pos.piece_at(Square::F1).unwrap();
+    assert_eq!(Color::White, rook.color);
+    assert_eq!(PieceKind::Rook, rook.kind);
+
+    let king = pos.piece_at(Square::G1).unwrap();
+    assert_eq!(Color::White, king.color);
+    assert_eq!(PieceKind::King, king.kind);
 }

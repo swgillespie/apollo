@@ -170,3 +170,18 @@ fn invalid_fullmove() {
     let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 4294967296").unwrap_err();
     assert_eq!(FenParseError::InvalidFullmove, err);
 }
+
+fn fen_roundtrip(fen: &'static str) {
+    let pos = Position::from_fen(fen).unwrap();
+    assert_eq!(fen, pos.as_fen());
+}
+
+#[test]
+fn starting_position_roundtrip() {
+    fen_roundtrip("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
+#[test]
+fn empty_roundtrip() {
+    fen_roundtrip("8/8/8/8/8/8/8/8 w - - 0 1");
+}

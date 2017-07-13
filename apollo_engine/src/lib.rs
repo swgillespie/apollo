@@ -19,7 +19,7 @@
 //!
 //! It is one component of the Apollo chess engine. Other components are
 //! responsible for searching for good moves and communicating with a chess UI.
-#![allow(unused_features, dead_code)]
+#![allow(unused_features)]
 #![feature(const_fn, inclusive_range_syntax, test)]
 
 #[macro_use]
@@ -34,7 +34,10 @@ mod bitboard;
 mod attacks;
 mod moves;
 mod position;
+mod movegen;
 
 pub use types::{Square, Rank, File, Color, Piece, PieceKind};
 pub use moves::Move;
 pub use position::{Position, FenParseError};
+pub use attacks::initialize;
+pub use bitboard::{Bitboard, BitboardIterator};

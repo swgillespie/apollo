@@ -1,0 +1,11 @@
+[package]
+name = "apollo_perft"
+version = "0.0.1"
+authors = ["Sean Gillespie <sean@swgillespie.me>"]
+
+[dependencies]
+apollo_engine = { path = "../apollo_engine", version = "0.0.1" }
+clap = "2.25.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"

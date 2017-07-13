@@ -31,7 +31,11 @@ static mut PAWN_TABLE: [[Bitboard; 2]; 64] = [[Bitboard::none(); 2]; 64];
 static mut KNIGHT_TABLE: [Bitboard; 64] = [Bitboard::none(); 64];
 static mut KING_TABLE: [Bitboard; 64] = [Bitboard::none(); 64];
 
-fn ray_attacks(square: Square, occupancy: Bitboard, dir: Direction) -> Bitboard {
+// a ray is "positive" if the ray vector is positive, otherwise a ray is
+// "negative". if a ray is negative, we need to use leading zeros intead of
+// trailing zeros in order to find the blocking piece.
+fn positive_ray_attacks(square: Square, occupancy: Bitboard, dir: Direction) -> Bitboard {
+    debug_assert!(dir.as_vector() > 0);
     let ray_table = unsafe { &RAY_TABLE };
     let attacks = ray_table[square as usize][dir as usize];
     let blocker = (attacks & occupancy).bits();
@@ -40,32 +44,46 @@ fn ray_attacks(square: Square, occupancy: Bitboard, dir: Direction) -> Bitboard 
     attacks ^ blocking_ray
 }
 
+fn negative_ray_attacks(square: Square, occupancy: Bitboard, dir: Direction) -> Bitboard {
+    debug_assert!(dir.as_vector() < 0);
+    let ray_table = unsafe { &RAY_TABLE };
+    let attacks = ray_table[square as usize][dir as usize];
+    let blocker = (attacks & occupancy).bits();
+
+    // this can be done branchless, but on x86 rustc will use cmov for this
+    // pattern, which works fine for us here since we're just trying to avoid
+    // branch mispredicts.
+    let blocking_square = (64 - blocker.leading_zeros()).checked_sub(1).unwrap_or(64);
+    let blocking_ray = ray_table[blocking_square as usize][dir as usize];
+    attacks ^ blocking_ray
+}
+
 /// Returns the a bitboard of legal diagonal attacks for a piece at the given
 /// square and with the given board occupancy.
 pub fn diagonal_attacks(square: Square, occupancy: Bitboard) -> Bitboard {
-    ray_attacks(square, occupancy, Direction::NorthWest) |
-    ray_attacks(square, occupancy, Direction::SouthEast)
+    positive_ray_attacks(square, occupancy, Direction::NorthWest) |
+    negative_ray_attacks(square, occupancy, Direction::SouthEast)
 }
 
 /// Returns the bitboard of legal antidiagonal attacks for a piece at the given
 /// square and with the given board occupancy.
 pub fn antidiagonal_attacks(square: Square, occupancy: Bitboard) -> Bitboard {
-    ray_attacks(square, occupancy, Direction::NorthEast) |
-    ray_attacks(square, occupancy, Direction::SouthWest)
+    positive_ray_attacks(square, occupancy, Direction::NorthEast) |
+    negative_ray_attacks(square, occupancy, Direction::SouthWest)
 }
 
 /// Returns the bitboard of legal file attacks for a piece at the given square
 /// and with the given board occupancy.
 pub fn file_attacks(square: Square, occupancy: Bitboard) -> Bitboard {
-    ray_attacks(square, occupancy, Direction::North) |
-    ray_attacks(square, occupancy, Direction::South)
+    positive_ray_attacks(square, occupancy, Direction::North) |
+    negative_ray_attacks(square, occupancy, Direction::South)
 }
 
 /// Returns the bitboard of legal rank attacks for a piece at the given square
 /// and with the given board occupancy.
 pub fn rank_attacks(square: Square, occupancy: Bitboard) -> Bitboard {
-    ray_attacks(square, occupancy, Direction::East) |
-    ray_attacks(square, occupancy, Direction::West)
+    positive_ray_attacks(square, occupancy, Direction::East) |
+    negative_ray_attacks(square, occupancy, Direction::West)
 }
 
 /// Returns the bitboard of legal bishop moves for a piece at the given square
@@ -234,7 +252,7 @@ fn initialize_kings() {
 
         if !rank_1.test(sq) {
             let south = FromPrimitive::from_u64(sq_idx - 8).unwrap();
-            board.set(south);
+            board.set(south );
             if !file_a.test(sq) {
                 let sw = FromPrimitive::from_u64(sq_idx - 9).unwrap();
                 board.set(sw);
@@ -510,12 +528,39 @@ mod tests {
         assert!(moves.test(Square::F3));
     }
 
+    #[test]
+    fn ray_pin() {
+        // this test exposes bugs in positive and negative ray piece blocker
+        // generation
+        super::initialize();
+        let mut occ = Bitboard::none();
+        occ.set(Square::E2);
+        occ.set(Square::E1);
+        let moves = super::rook_attacks(Square::E6, occ);
+        println!("moves: ");
+        println!("{}", moves);
+        assert!(moves.test(Square::E5));
+        assert!(moves.test(Square::E4));
+        assert!(moves.test(Square::E3));
+        assert!(moves.test(Square::E2));
+        assert!(!moves.test(Square::E1));
+    }
+
     #[bench]
-    fn single_ray_bench(b: &mut test::Bencher) {
+    fn single_positive_ray_bench(b: &mut test::Bencher) {
+        b.iter(|| {
+                   let square = test::black_box(Square::E4);
+                   let dir = test::black_box(Direction::NorthWest);
+                   super::positive_ray_attacks(square, Bitboard::none(), dir);
+               });
+    }
+
+    #[bench]
+    fn single_negative_ray_bench(b: &mut test::Bencher) {
         b.iter(|| {
                    let square = test::black_box(Square::E4);
                    let dir = test::black_box(Direction::SouthWest);
-                   super::ray_attacks(square, Bitboard::none(), dir);
+                   super::negative_ray_attacks(square, Bitboard::none(), dir);
                });
     }
 
