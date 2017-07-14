@@ -1,0 +1,6 @@
+[package]
+name = "apollo_uci"
+version = "0.0.1"
+authors = ["Sean Gillespie <sean@swgillespie.me>"]
+
+[dependencies]
