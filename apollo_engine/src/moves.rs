@@ -248,6 +248,10 @@ impl Move {
 
         buf
     }
+
+    pub fn from_uci<S: AsRef<str>>(_: S) -> Option<Move> {
+        unimplemented!()
+    }
 }
 
 impl fmt::Display for Move {

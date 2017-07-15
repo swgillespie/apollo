@@ -48,7 +48,7 @@ pub struct Position {
 
 impl Position {
     /// Constructs a new, empty Position.
-    pub fn new() -> Position {
+    pub const fn new() -> Position {
         Position {
             boards_by_piece: [Bitboard::none(); 12],
             boards_by_color: [Bitboard::none(); 2],
