@@ -771,6 +771,86 @@ impl Position {
     pub fn hash(&self) -> u64 {
         self.zobrist_hash
     }
+
+    /// Returns whether or not this game is over, either from checkmate
+    /// or a draw.
+    pub fn is_game_over(&self) -> bool {
+        self.is_checkmate() || self.is_draw()
+    }
+
+    /// Returns whether or not this game has ended in a draw.
+    pub fn is_draw(&self) -> bool {
+        self.is_threefold_repetition() || self.is_fifty_move_rule() || self.is_stalemate()
+    }
+
+    /// Returns whether or not this game has ended due to a draw by
+    /// threefold repetition.
+    pub fn is_threefold_repetition(&self) -> bool {
+        // this one's hard...
+        // chess engines often re-use the transposition table for this purpose.
+        // apollo's transposition table is in a different crate, because I
+        // originally was hoping that the `apollo_engine` crate would have
+        // no global state. However, detecting threefold repetition requires
+        // us to maintain at least some information about how the game has
+        // progressed up until this point. (Transposition tables already have
+        // this information, since they are used to cache the results of move
+        // searches for positions the engine has already seen.)
+        //
+        // this is really unfortunate. if we don't implement threefold
+        // repetition in the engine, we run the risk of the engine running
+        // into dumb draws or getting into loops in situations where it is
+        // ahead. We also run the risk of the engine getting into infinite loops
+        // when playing itself. (Though someone will proabably claim a draw by
+        // the fifty move rule if it goes on long enough.)
+        false
+    }
+
+    /// Returns whether or not this game has ended due to a draw by the
+    /// fifty move rule.
+    pub fn is_fifty_move_rule(&self) -> bool {
+        self.halfmove_clock >= 50
+    }
+
+    /// Returns whether or not this game has ended due to a draw by stalemate;
+    /// the player to move is not in check but has no legal moves.
+    pub fn is_stalemate(&self) -> bool {
+        let player = self.side_to_move;
+        if self.is_check(player) {
+            // if we have no legal moves and we're checked, it's checkmate
+            // and not a draw
+            return false;
+        }
+
+        for mov in self.pseudolegal_moves() {
+            let mut clone = self.clone();
+            clone.apply_move(mov);
+            if !clone.is_check(player) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// Returns whether or not the player whose turn it is to move is
+    /// checkmated and has no legal moves.
+    pub fn is_checkmate(&self) -> bool {
+        let player = self.side_to_move;
+        if !self.is_check(player) {
+            // not check -> not checkmate
+            return false;
+        }
+
+        for mov in self.pseudolegal_moves() {
+            let mut clone = self.clone();
+            clone.apply_move(mov);
+            if !clone.is_check(player) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 impl Debug for Position {
