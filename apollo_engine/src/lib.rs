@@ -25,6 +25,7 @@
 #[macro_use]
 extern crate bitflags;
 extern crate num_traits;
+extern crate rand;
 
 #[cfg(test)]
 extern crate test;
@@ -35,9 +36,14 @@ mod attacks;
 mod moves;
 mod position;
 mod movegen;
+mod zobrist;
 
 pub use types::{Square, Rank, File, Color, Piece, PieceKind};
 pub use moves::Move;
 pub use position::{Position, FenParseError};
-pub use attacks::initialize;
 pub use bitboard::{Bitboard, BitboardIterator};
+
+pub fn initialize() {
+    attacks::initialize();
+    zobrist::initialize();
+}

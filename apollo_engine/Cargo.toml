@@ -10,3 +10,4 @@ keywords = ["chess"]
 [dependencies]
 bitflags = "0.9.1"
 num-traits = "0.1.39"
+rand = "0.3"

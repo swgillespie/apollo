@@ -219,6 +219,7 @@ mod position_4 {
     }
 
     #[test]
+    #[ignore]
     fn perft_4() {
         apollo_engine::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4);
@@ -262,6 +263,7 @@ mod position_5 {
     }
 
     #[test]
+    #[ignore]
     fn perft_4() {
         apollo_engine::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",

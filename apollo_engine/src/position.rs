@@ -7,12 +7,14 @@
 // except according to those terms.
 use std::fmt::{self, Debug, Display, Write};
 use std::vec::IntoIter;
+use std::hash::{Hash, Hasher};
 use num_traits::FromPrimitive;
 use bitboard::Bitboard;
 use types::{self, Square, Piece, Color, CastleStatus, Rank, File, PieceKind, Direction};
 use moves::Move;
 use attacks;
 use movegen;
+use zobrist;
 
 /// Possible errors that can arise when parsing a FEN string into
 /// a `Position`.
@@ -44,6 +46,7 @@ pub struct Position {
     fullmove_clock: u32,
     side_to_move: Color,
     castle_status: CastleStatus,
+    zobrist_hash: u64,
 }
 
 impl Position {
@@ -57,6 +60,7 @@ impl Position {
             fullmove_clock: 0,
             side_to_move: Color::White,
             castle_status: types::CASTLE_ALL,
+            zobrist_hash: 0,
         }
     }
 
@@ -245,6 +249,7 @@ impl Position {
         pos.halfmove_clock = eat_halfmove(iter)?;
         eat(iter, ' ')?;
         pos.fullmove_clock = eat_fullmove(iter)?;
+        pos.zobrist_hash = zobrist::hash(&pos);
         Ok(pos)
     }
 
@@ -357,6 +362,7 @@ impl Position {
         self.boards_by_color[piece.color as usize].set(square);
         let offset = if piece.color == Color::White { 0 } else { 6 };
         self.boards_by_piece[piece.kind as usize + offset].set(square);
+        zobrist::modify_piece(&mut self.zobrist_hash, square, piece);
         Ok(())
     }
 
@@ -368,6 +374,7 @@ impl Position {
             self.boards_by_color[piece.color as usize].unset(square);
             let offset = if piece.color == Color::White { 0 } else { 6 };
             self.boards_by_piece[piece.kind as usize + offset].unset(square);
+            zobrist::modify_piece(&mut self.zobrist_hash, square, piece);
             Ok(())
         } else {
             Err(())
@@ -528,8 +535,10 @@ impl Position {
 
             let sq = FromPrimitive::from_i8(mov.destination() as i8 + ep_dir.as_vector())
                 .expect("ep-square not on board");
+            zobrist::modify_en_passant(&mut self.zobrist_hash, self.en_passant_square, Some(sq));
             self.en_passant_square = Some(sq);
         } else {
+            zobrist::modify_en_passant(&mut self.zobrist_hash, self.en_passant_square, None);
             self.en_passant_square = None;
         }
 
@@ -544,6 +553,8 @@ impl Position {
                         Color::Black => types::BLACK_MASK,
                     };
 
+                    zobrist::modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
+                    zobrist::modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
                     self.castle_status &= !mask;
                 }
                 PieceKind::Rook => {
@@ -559,6 +570,7 @@ impl Position {
                             Color::Black => types::BLACK_O_O_O,
                         };
 
+                        zobrist::modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
                         self.castle_status &= !mask;
                     }
 
@@ -569,6 +581,7 @@ impl Position {
                             Color::Black => types::BLACK_O_O,
                         };
 
+                        zobrist::modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
                         self.castle_status &= !mask;
                     }
                 }
@@ -578,6 +591,7 @@ impl Position {
         }
 
         self.side_to_move = self.side_to_move.toggle();
+        zobrist::modify_side_to_move(&mut self.zobrist_hash);
         if mov.is_capture() || moving_piece.kind == PieceKind::Pawn {
             self.halfmove_clock = 0;
         } else {
@@ -592,7 +606,7 @@ impl Position {
         }
     }
 
-    fn pieces(&self, color: Color, kind: PieceKind) -> Bitboard {
+    pub fn pieces(&self, color: Color, kind: PieceKind) -> Bitboard {
         let offset = match color {
             Color::White => 0,
             Color::Black => 6,
@@ -752,6 +766,11 @@ impl Position {
             Color::Black => self.castle_status.contains(types::BLACK_O_O_O),
         }
     }
+
+    /// Returns a hash code for this position.
+    pub fn hash(&self) -> u64 {
+        self.zobrist_hash
+    }
 }
 
 impl Debug for Position {
@@ -789,5 +808,13 @@ impl Display for Position {
 
         writeln!(f, "")?;
         Ok(())
+    }
+}
+
+// Note that Position does not implement Eq, so it's still not
+// suitable for being the key of a hash table.
+impl Hash for Position {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        hasher.write_u64(self.zobrist_hash);
     }
 }
