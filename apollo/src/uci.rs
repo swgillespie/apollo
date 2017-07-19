@@ -7,7 +7,7 @@
 // except according to those terms.
 use apollo_engine::Move;
 use logger;
-use engine;
+use engine::{self, SearchRequest};
 
 pub fn handshake() {
     println!("id name {} {}",
@@ -94,5 +94,15 @@ pub fn bestmove(mov: Move) {
 }
 
 pub fn go(_tokens: &[&str]) {
-    engine::go();
+    let mut req = SearchRequest::new();
+    req.depth = 5;
+    engine::go(&req);
+}
+
+pub fn stop() {
+    engine::stop();
+}
+
+pub fn currentpos() {
+    println!("{}", engine::current_position());
 }

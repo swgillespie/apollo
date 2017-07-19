@@ -14,6 +14,7 @@ extern crate rand;
 extern crate log;
 #[macro_use]
 extern crate lazy_static;
+extern crate cancellation;
 
 use std::io::{self, BufRead, Write};
 use std::error::Error;
@@ -26,18 +27,24 @@ mod search;
 
 fn main() {
     logger::initialize();
+    if cfg!(debug_assertions) {
+        logger::debug_enable();
+    }
+
     engine::initialize();
     println!("Apollo chess engine, by Sean Gillespie");
     main_loop();
 }
 
 fn quit() -> ! {
+    engine::shutdown();
     process::exit(0);
 }
 
 fn error_and_exit<E: Error>(err: E) -> ! {
     println!("info string fatal i/o error: {}", err.description());
     io::stdout().flush().unwrap();
+    engine::shutdown();
     process::exit(1);
 }
 
@@ -68,6 +75,9 @@ fn main_loop() {
             "ucinewgame" => uci::newgame(),
             "position" => uci::position(&tokens),
             "go" => uci::go(&tokens),
+            "stop" => uci::stop(),
+            // nonstandard uci commands, for debugging
+            "currentpos" => uci::currentpos(),
             _ => println!("unknown command: {}", tokens[0])
         }
     }

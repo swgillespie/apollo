@@ -55,95 +55,112 @@ impl Default for Bitboard {
 
 impl Bitboard {
     /// Constructs a new bitboard from the given bits.
+    #[inline]
     pub const fn from_bits(bits: u64) -> Bitboard {
         Bitboard { bits: bits }
     }
 
     /// Constructs a new bitboard with all bits set to one, representing
     /// a complete set.
+    #[inline]
     pub const fn all() -> Bitboard {
         Bitboard::from_bits(0xFFFFFFFFFFFFFFFF)
     }
 
     /// Constructs a new bitboard with all bits zeroed, representing
     /// the empty set.
+    #[inline]
     pub const fn none() -> Bitboard {
         Bitboard::from_bits(0)
     }
 
     /// Tests whether or not a square is a member of this bitboard.
+    #[inline]
     pub fn test(&self, square: Square) -> bool {
         (self.bits & (1u64 << (square as u8))) != 0
     }
 
     /// Sets a square to be a member of this bitboard.
+    #[inline]
     pub fn set(&mut self, square: Square) {
         self.bits |= 1u64 << (square as u8);
     }
 
     /// Removes a square from this bitboard.
+    #[inline]
     pub fn unset(&mut self, square: Square) {
         self.bits &= !(1u64 << square as u8);
     }
 
     /// Takes the bitwise and of two bitboards producing the set intersection
     /// of their contents.
+    #[inline]
     pub const fn and(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits & other.bits)
     }
 
     /// Takes the bitwise or of two bitboards producing the set union
     /// of their contents.
+    #[inline]
     pub const fn or(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits | other.bits)
     }
 
     /// Takes the bitwise exclusive or of two bitboards.
+    #[inline]
     pub const fn xor(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits ^ other.bits)
     }
 
     /// Takes the bitwise complement of this bitboard, producing the set
     /// complement its contents.
+    #[inline]
     pub const fn not(&self) -> Bitboard {
         Bitboard::from_bits(!self.bits)
     }
 
     /// Produces an iterator over the squares contained in this bitboard.
+    #[inline]
     pub fn iter(&self) -> BitboardIterator {
         BitboardIterator::new(self.bits)
     }
 
     /// Produces a bitboard with the components of this bitboard that
     /// lie on the given rank.
+    #[inline]
     pub const fn rank(&self, rank: Rank) -> Bitboard {
         self.and(Bitboard::from_bits(RANK_MASKS[rank as usize]))
     }
 
     /// Produces a bitboard with the components of this bitboard that
     /// lie on the given file.
+    #[inline]
     pub const fn file(&self, file: File) -> Bitboard {
         self.and(Bitboard::from_bits(FILE_MASKS[file as usize]))
     }
 
     /// Retireves the raw bits associated with this bitboard.
+    #[inline]
     pub const fn bits(&self) -> u64 {
         self.bits
     }
 
     /// Retrieves the number of squares contained in the set represented
     /// by this bitboard.
+    #[inline]
     pub fn count(&self) -> u32 {
         self.bits.count_ones()
     }
 
     /// Retrieves whether or not the set represented by this bitboard is
     /// the empty set.
+    #[inline]
     pub const fn empty(&self) -> bool {
         self.bits == 0
     }
 
     /// Retrieves one piece in the set represented by this bitboard.
+    #[inline]
     pub fn first(&self) -> Option<Square> {
         self.into_iter().next()
     }
@@ -184,12 +201,14 @@ impl fmt::Display for Bitboard {
 impl ops::BitAnd for Bitboard {
     type Output = Bitboard;
 
+    #[inline]
     fn bitand(self, rhs: Bitboard) -> Bitboard {
         self.and(rhs)
     }
 }
 
 impl ops::BitAndAssign for Bitboard {
+    #[inline]
     fn bitand_assign(&mut self, rhs: Bitboard) {
         *self = self.and(rhs);
     }
@@ -198,12 +217,14 @@ impl ops::BitAndAssign for Bitboard {
 impl ops::BitOr for Bitboard {
     type Output = Bitboard;
 
+    #[inline]
     fn bitor(self, rhs: Bitboard) -> Bitboard {
         self.or(rhs)
     }
 }
 
 impl ops::BitOrAssign for Bitboard {
+    #[inline]
     fn bitor_assign(&mut self, rhs: Bitboard) {
         *self = self.or(rhs);
     }
@@ -212,12 +233,14 @@ impl ops::BitOrAssign for Bitboard {
 impl ops::BitXor for Bitboard {
     type Output = Bitboard;
 
+    #[inline]
     fn bitxor(self, rhs: Bitboard) -> Bitboard {
         self.xor(rhs)
     }
 }
 
 impl ops::BitXorAssign for Bitboard {
+    #[inline]
     fn bitxor_assign(&mut self, rhs: Bitboard) {
         *self = self.xor(rhs);
     }
@@ -230,6 +253,7 @@ pub struct BitboardIterator {
 }
 
 impl BitboardIterator {
+    #[inline]
     fn new(bits: u64) -> BitboardIterator {
         BitboardIterator { bits: bits }
     }
@@ -238,6 +262,7 @@ impl BitboardIterator {
 impl Iterator for BitboardIterator {
     type Item = Square;
 
+    #[inline]
     fn next(&mut self) -> Option<Square> {
         if self.bits == 0 {
             return None;
@@ -248,6 +273,7 @@ impl Iterator for BitboardIterator {
         Some(FromPrimitive::from_u32(next).unwrap())
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(64))
     }

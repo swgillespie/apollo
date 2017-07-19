@@ -6,16 +6,37 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 mod threads;
-mod trans_table;
+pub mod trans_table;
 
-use std::ops::Deref;
+use std::thread;
+use std::sync::Arc;
 use parking_lot::RwLock;
-use apollo_engine::{Position, Move};
-use search;
+use apollo_engine::{self, Position, Move};
 use uci;
-use apollo_engine;
 
-static CURRENT_POS : RwLock<Position> = RwLock::new(Position::new());
+pub(in engine) static CURRENT_POS : RwLock<Position> = RwLock::new(Position::new());
+
+#[derive(Clone, Debug, Default)]
+pub struct SearchRequest {
+    pub depth: u32,
+    pub starting_moves: Vec<Move>,
+    pub ponder: bool,
+    pub wtime: u32,
+    pub btime: u32,
+    pub winc: u32,
+    pub binc: u32,
+    pub moves_to_go: u32,
+    pub nodes: u64,
+    pub mate: bool,
+    pub movetime: u32,
+    pub infinite: bool
+}
+
+impl SearchRequest {
+    pub fn new() -> SearchRequest {
+        Default::default()
+    }
+}
 
 pub fn initialize() {
     // initialize the engine state. This involves initializing
@@ -29,11 +50,15 @@ pub fn initialize() {
     trans_table::initialize();
 }
 
+pub fn shutdown() {
+    threads::shutdown();
+}
+
 // Indicate that we are going to start searching from a new game,
 // so we need to clear all of our state.
 pub fn new_game() {
-    // we have no state yet :v)
     info!("clearing state for new game");
+    trans_table::clear();
 }
 
 pub fn new_position(fen: &str, moves: &[&str]) {
@@ -60,12 +85,21 @@ pub fn new_position(fen: &str, moves: &[&str]) {
     *CURRENT_POS.write() = pos;
 }
 
-pub fn go() {
-    let mov = {
-        let pos = CURRENT_POS.read();
-        search::search_from_position(pos.deref())
-    };
+pub fn go(req: &SearchRequest) {
+    let request = Arc::new(req.clone());
+    threads::request_search(request);
+    thread::spawn(move || {
+        let (score, mov) = threads::request_results();
+        info!("best move: {} (score: {})", mov.as_uci(), score);
+        uci::bestmove(mov);
+        CURRENT_POS.write().apply_move(mov);
+    });
+}
 
-    uci::bestmove(mov);
-    CURRENT_POS.write().apply_move(mov);
+pub fn stop() {
+    threads::cancel_search();
+}
+
+pub fn current_position() -> Position {
+    CURRENT_POS.read().clone()
 }

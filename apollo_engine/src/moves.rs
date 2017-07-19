@@ -165,6 +165,11 @@ impl Move {
         mov
     }
 
+    /// Constructs a null move; a move that does nothing.
+    pub fn null() -> Move {
+        Move(0)
+    }
+
     /// If this move is a promotion, returns the piece kind that the
     /// pawn is being promoted to. Panics if the move is not a promotion.
     pub fn promotion_piece(self) -> PieceKind {
@@ -222,6 +227,11 @@ impl Move {
     /// Returns whether or not this move is a queenside castle.
     pub fn is_queenside_castle(self) -> bool {
         (self.0 & ATTR_MASK) == 3
+    }
+
+    /// Returns whether or not this move is a null move.
+    pub fn is_null(self) -> bool {
+        self.0 == 0
     }
 
     /// Returns an UCI-compatible string representation of

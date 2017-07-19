@@ -476,6 +476,14 @@ impl Position {
             }
         }
 
+        if mov.is_null() {
+            // quick out for null moves - don't change anything but the
+            // side to move
+            self.side_to_move = self.side_to_move.toggle();
+            zobrist::modify_side_to_move(&mut self.zobrist_hash);
+            return;
+        }
+
         let moving_piece =
             self.piece_at(mov.source()).expect("moving from a square with no piece on it");
         assert_eq!(self.side_to_move,
@@ -606,6 +614,7 @@ impl Position {
         }
     }
 
+    #[inline]
     pub fn pieces(&self, color: Color, kind: PieceKind) -> Bitboard {
         let offset = match color {
             Color::White => 0,
@@ -615,38 +624,47 @@ impl Position {
         self.boards_by_piece[offset + kind as usize]
     }
 
+    #[inline]
     pub fn pawns(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Pawn)
     }
 
+    #[inline]
     pub fn knights(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Knight)
     }
 
+    #[inline]
     pub fn bishops(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Bishop)
     }
 
+    #[inline]
     pub fn rooks(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Rook)
     }
 
+    #[inline]    
     pub fn queens(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Queen)
     }
 
+    #[inline]
     pub fn kings(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::King)
     }
 
+    #[inline]
     pub fn white(&self) -> Bitboard {
         self.color(Color::White)
     }
 
+    #[inline]
     pub fn black(&self) -> Bitboard {
         self.color(Color::Black)
     }
 
+    #[inline]
     pub fn color(&self, color: Color) -> Bitboard {
         self.boards_by_color[color as usize]
     }
@@ -730,27 +748,32 @@ impl Position {
 
     /// Returns the current en-passant square for this position, if
     /// there is one.
+    #[inline]
     pub fn en_passant_square(&self) -> Option<Square> {
         self.en_passant_square
     }
 
     /// Returns the current halfmove clock for this position.
+    #[inline]
     pub fn halfmove_clock(&self) -> u32 {
         self.halfmove_clock
     }
 
     /// Returns the current fullmove clock for this position.
+    #[inline]
     pub fn fullmove_clock(&self) -> u32 {
         self.fullmove_clock
     }
 
     /// Returns the current side to move for this position.
+    #[inline]
     pub fn side_to_move(&self) -> Color {
         self.side_to_move
     }
 
     /// Returns whether or not the given color is permitted to castle
     /// kingside in this position.
+    #[inline]
     pub fn can_castle_kingside(&self, color: Color) -> bool {
         match color {
             Color::White => self.castle_status.contains(types::WHITE_O_O),
@@ -760,6 +783,7 @@ impl Position {
 
     /// Returns whether or not the given color is permitted to castle queenside
     /// in this position.
+    #[inline]
     pub fn can_castle_queenside(&self, color: Color) -> bool {
         match color {
             Color::White => self.castle_status.contains(types::WHITE_O_O_O),
@@ -768,23 +792,27 @@ impl Position {
     }
 
     /// Returns a hash code for this position.
+    #[inline]
     pub fn hash(&self) -> u64 {
         self.zobrist_hash
     }
 
     /// Returns whether or not this game is over, either from checkmate
     /// or a draw.
+    #[inline]
     pub fn is_game_over(&self) -> bool {
         self.is_checkmate() || self.is_draw()
     }
 
     /// Returns whether or not this game has ended in a draw.
+    #[inline]
     pub fn is_draw(&self) -> bool {
         self.is_threefold_repetition() || self.is_fifty_move_rule() || self.is_stalemate()
     }
 
     /// Returns whether or not this game has ended due to a draw by
     /// threefold repetition.
+    #[inline]
     pub fn is_threefold_repetition(&self) -> bool {
         // this one's hard...
         // chess engines often re-use the transposition table for this purpose.
@@ -807,6 +835,7 @@ impl Position {
 
     /// Returns whether or not this game has ended due to a draw by the
     /// fifty move rule.
+    #[inline]
     pub fn is_fifty_move_rule(&self) -> bool {
         self.halfmove_clock >= 50
     }
@@ -888,6 +917,12 @@ impl Display for Position {
 
         writeln!(f, "")?;
         Ok(())
+    }
+}
+
+impl Default for Position {
+    fn default() -> Position {
+        Position::new()
     }
 }
 

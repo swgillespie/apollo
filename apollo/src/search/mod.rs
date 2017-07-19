@@ -5,25 +5,41 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+use std::f64;
+use cancellation::CancellationToken;
 use apollo_engine::{Position, Move};
 use rand;
 
-pub fn search_from_position(pos: &Position) -> Move {
-    // for now - make a random move.
-    let legal_moves = {
-        let mut moves = vec![];
-        for mov in pos.pseudolegal_moves() {
-            let mut clone = pos.clone();
-            clone.apply_move(mov);
-            if !clone.is_check(pos.side_to_move()) {
-                moves.push(mov);
-            }
+mod alpha_beta;
+mod eval;
+
+/// Searches for the best move starting at the given position and looking at
+/// the given depth, with the given cancellation token. Callers can signal
+/// search cancellation using the cancellation token, which will cause the
+/// search to terminate as quickly as possible and return the best move
+/// that it has seen so far.
+pub fn search(pos: &Position, depth: u32, ct: &CancellationToken) -> (f64, Move) {
+    let (mut best_score, mut best_move) = (-f64::INFINITY, Move::null());
+    let side = pos.side_to_move();
+    for mov in pos.pseudolegal_moves() {
+        let mut pos_dup = pos.clone();
+        pos_dup.apply_move(mov);
+        if pos_dup.is_check(side) {
+            continue;
         }
 
-        moves
-    };
+        // search_impl returns Ok if it wasn't canceled, and Err if it was.
+        // we don't care which one it is here.
+        let score = match alpha_beta::negamax(&pos_dup, side, -f64::INFINITY, f64::INFINITY, depth, ct) {
+            Ok(s) => -s,
+            Err(s) => -s,
+        };
 
-    assert!(legal_moves.len() != 0);
-    let idx = rand::random::<usize>() % legal_moves.len();
-    legal_moves[idx]
+        if score > best_score {
+            best_score = score;
+            best_move = mov;
+        }
+    }
+
+    (best_score, best_move)
 }
