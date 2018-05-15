@@ -168,9 +168,9 @@ impl Bitboard {
 
 impl fmt::Display for Bitboard {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        for rank_idx in ((Rank::Rank1 as u8)...(Rank::Rank8 as u8)).rev() {
+        for rank_idx in ((Rank::Rank1 as u8)..=(Rank::Rank8 as u8)).rev() {
             let rank: Rank = FromPrimitive::from_u8(rank_idx).unwrap();
-            for file_idx in (File::A as u8)...(File::H as u8) {
+            for file_idx in (File::A as u8)..=(File::H as u8) {
                 let file: File = FromPrimitive::from_u8(file_idx).unwrap();
                 let sq = Square::of(rank, file);
                 if self.test(sq) {
@@ -183,12 +183,12 @@ impl fmt::Display for Bitboard {
             writeln!(f, "| {}", (rank_idx + 49) as char)?
         }
 
-        for _ in (File::A as u8)...(File::H as u8) {
+        for _ in (File::A as u8)..=(File::H as u8) {
             write!(f, "---")?;
         }
 
         writeln!(f, "")?;
-        for file_idx in (File::A as u8)...(File::H as u8) {
+        for file_idx in (File::A as u8)..=(File::H as u8) {
             write!(f, " {} ", (file_idx + 97) as char)?
         }
 

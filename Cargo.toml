@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "apollo_engine",
+    "apollo",
     "apollo_perft",
-    "apollo"
+    "apollo_cli"
 ]

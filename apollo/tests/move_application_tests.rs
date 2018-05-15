@@ -5,8 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
-use apollo_engine::{Position, Move, Square, Color, PieceKind};
+extern crate apollo;
+use apollo::{Position, Move, Square, Color, PieceKind};
 
 #[test]
 fn smoke_test_opening_pawn() {

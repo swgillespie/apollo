@@ -5,11 +5,11 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
+extern crate apollo;
 extern crate num_traits; 
 
-use apollo_engine::{Position, FenParseError};
-use apollo_engine::{Square, Color, File, Rank, Piece, PieceKind};
+use apollo::{Position, FenParseError};
+use apollo::{Square, Color, File, Rank, Piece, PieceKind};
 use num_traits::FromPrimitive;
 
 #[test]

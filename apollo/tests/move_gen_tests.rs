@@ -5,12 +5,12 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
+extern crate apollo;
 use std::collections::HashSet;
-use apollo_engine::{Move, Position, Square, PieceKind};
+use apollo::{Move, Position, Square, PieceKind};
 
 fn assert_moves_generated(fen: &'static str, moves: &[Move]) {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves_hash {
@@ -26,7 +26,7 @@ fn assert_moves_generated(fen: &'static str, moves: &[Move]) {
 }
 
 fn assert_moves_contains(fen: &'static str, moves: &[Move]) {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves {
@@ -38,7 +38,7 @@ fn assert_moves_contains(fen: &'static str, moves: &[Move]) {
 }
 
 fn assert_moves_does_not_contain(fen: &'static str, moves: &[Move]) {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves {

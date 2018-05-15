@@ -7,7 +7,7 @@
 // except according to those terms.
 #![feature(const_fn)]
 
-extern crate apollo_engine;
+extern crate apollo;
 extern crate parking_lot;
 extern crate rand;
 #[macro_use]

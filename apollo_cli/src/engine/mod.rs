@@ -11,7 +11,7 @@ pub mod trans_table;
 use std::thread;
 use std::sync::Arc;
 use parking_lot::RwLock;
-use apollo_engine::{self, Position, Move};
+use apollo::{self, Position, Move};
 use uci;
 
 pub(in engine) static CURRENT_POS : RwLock<Position> = RwLock::new(Position::new());
@@ -41,7 +41,7 @@ impl SearchRequest {
 pub fn initialize() {
     // initialize the engine state. This involves initializing
     // apollo_engine itself as well as initializing search thread(s).
-    apollo_engine::initialize();
+    apollo::initialize();
 
     // initialize search threads
     threads::initialize();

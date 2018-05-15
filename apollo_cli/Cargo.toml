@@ -1,0 +1,12 @@
+[package]
+name = "apollo_cli"
+version = "0.0.1"
+authors = ["Sean Gillespie <sean@swgillespie.me>"]
+
+[dependencies]
+apollo = { path = "../apollo", version = "0.0.1" }
+log = { git = "https://github.com/rust-lang-nursery/log.git", rev = "c77cd5e" }
+parking_lot = {version = "0.4", features = ["nightly"]}
+lazy_static = "0.2"
+rand = "0.3"
+cancellation = "0.1"

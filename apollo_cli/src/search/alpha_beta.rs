@@ -9,7 +9,7 @@
 //! Simple alpha-beta search for searching the move tree.
 use search::eval;
 use engine::trans_table;
-use apollo_engine::{Position, Move, Color};
+use apollo::{Position, Move, Color};
 use std::f64;
 use cancellation::CancellationToken;
 

@@ -5,16 +5,16 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
+extern crate apollo;
 
-use apollo_engine::{Position, Square, Move};
+use apollo::{Position, Square, Move};
 
 // it's kinda hard to test a hash function, but here's
 // a smoke test regardless
 
 #[test]
 fn zobrist_smoke() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let mut pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         .unwrap();
     

@@ -10,7 +10,7 @@ use std::thread::{self, JoinHandle, Builder};
 use std::sync::atomic::{AtomicBool, Ordering, AtomicUsize};
 use std::sync::Arc;
 use parking_lot::{RwLock, Condvar, Mutex};
-use apollo_engine::Move;
+use apollo::Move;
 use cancellation::{CancellationTokenSource, CancellationToken};
 use engine::{self, SearchRequest};
 use search;

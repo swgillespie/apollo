@@ -10,7 +10,7 @@
 //! used during search to remember previously searched positions.
 use lazy_static;
 use parking_lot::RwLock;
-use apollo_engine::{Move, Position};
+use apollo::{Move, Position};
 use std::collections::HashMap;
 
 lazy_static! {

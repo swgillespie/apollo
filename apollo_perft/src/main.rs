@@ -5,7 +5,7 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
+extern crate apollo;
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -15,14 +15,14 @@ extern crate serde_json;
 
 mod perft;
 
-use apollo_engine::Position;
+use apollo::Position;
 use std::time::Instant;
 use std::process;
 use std::fs::File;
 use clap::{Arg, App};
 
 fn main() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(crate_version!())
         .author(crate_authors!())

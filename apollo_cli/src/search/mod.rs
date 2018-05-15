@@ -7,7 +7,7 @@
 // except according to those terms.
 use std::f64;
 use cancellation::CancellationToken;
-use apollo_engine::{Position, Move};
+use apollo::{Position, Move};
 use rand;
 
 mod alpha_beta;

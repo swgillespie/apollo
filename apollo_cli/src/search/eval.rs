@@ -5,7 +5,7 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use apollo_engine::{Position, Color};
+use apollo::{Position, Color};
 
 const KING_WEIGHT: f64 = 200.0;
 const QUEEN_WEIGHT: f64 = 9.0;

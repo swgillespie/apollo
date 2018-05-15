@@ -2,11 +2,12 @@
 name = "apollo"
 version = "0.0.1"
 authors = ["Sean Gillespie <sean@swgillespie.me>"]
+license = "MIT/Apache-2.0"
+description = "Core of a chess engine."
+repository = "https://github.com/swgillespie/apollo"
+keywords = ["chess"]
 
 [dependencies]
-apollo_engine = { path = "../apollo_engine", version = "0.0.1" }
-log = { git = "https://github.com/rust-lang-nursery/log.git", rev = "c77cd5e" }
-parking_lot = {version = "0.4", features = ["nightly"]}
-lazy_static = "0.2"
+bitflags = "0.9.1"
+num-traits = "0.1.39"
 rand = "0.3"
-cancellation = "0.1"

@@ -133,7 +133,7 @@ fn initialize_knights() {
     let rank_2 = Bitboard::all().rank(Rank::Rank2);
     let rank_7 = Bitboard::all().rank(Rank::Rank7);
     let rank_8 = Bitboard::all().rank(Rank::Rank8);
-    for sq_idx in (Square::A1 as u64)...(Square::H8 as u64) {
+    for sq_idx in (Square::A1 as u64)..=(Square::H8 as u64) {
         let sq = FromPrimitive::from_u64(sq_idx).unwrap();
         let mut board = Bitboard::none();
 
@@ -195,9 +195,9 @@ fn initialize_pawns() {
     let h_file = Bitboard::all().file(File::H);
     let rank_1 = Bitboard::all().rank(Rank::Rank1);
     let rank_8 = Bitboard::all().rank(Rank::Rank8);
-    for sq_idx in (Square::A1 as u64)...(Square::H8 as u64) {
+    for sq_idx in (Square::A1 as u64)..=(Square::H8 as u64) {
         let sq = FromPrimitive::from_u64(sq_idx).unwrap();
-        for color in (Color::White as usize)...(Color::Black as usize) {
+        for color in (Color::White as usize)..=(Color::Black as usize) {
             let mut board = Bitboard::none();
             let (promo_rank, up_left, up_right) = if color == (Color::White as usize) {
                 (rank_8, 7i64, 9i64)
@@ -233,7 +233,7 @@ fn initialize_kings() {
     let file_h = Bitboard::all().file(File::H);
     let rank_1 = Bitboard::all().rank(Rank::Rank1);
     let rank_8 = Bitboard::all().rank(Rank::Rank8);
-    for sq_idx in (Square::A1 as u64)...(Square::H8 as u64) {
+    for sq_idx in (Square::A1 as u64)..=(Square::H8 as u64) {
         let sq = FromPrimitive::from_u64(sq_idx).unwrap();
         let mut board = Bitboard::none();
         if !rank_8.test(sq) {
@@ -284,7 +284,7 @@ fn initialize_rays() {
     // the idea here is to generate rays in every direction for every square
     // on the board, to be used by the above methods.
     let ray_table = unsafe { &mut RAY_TABLE };
-    for sq in (Square::A1 as usize)...(Square::H8 as usize) {
+    for sq in (Square::A1 as usize)..=(Square::H8 as usize) {
         let mut populate_direction = |direction: Direction, edge: Bitboard| {
             let mut cursor: Square = FromPrimitive::from_u64(sq as u64).unwrap();
             if edge.test(cursor) {

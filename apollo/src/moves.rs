@@ -238,7 +238,7 @@ impl Move {
     /// this move.
     /// # Example
     /// ```
-    /// use apollo_engine::{Move, Square};
+    /// use apollo::{Move, Square};
     ///
     /// let mov = Move::quiet(Square::E4, Square::E5);
     /// assert_eq!("e4e5", mov.as_uci());

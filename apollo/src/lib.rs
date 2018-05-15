@@ -20,7 +20,7 @@
 //! It is one component of the Apollo chess engine. Other components are
 //! responsible for searching for good moves and communicating with a chess UI.
 #![allow(unused_features)]
-#![feature(const_fn, inclusive_range_syntax, test)]
+#![feature(const_fn, test)]
 
 #[macro_use]
 extern crate bitflags;

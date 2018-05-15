@@ -5,8 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
-use apollo_engine::Position;
+extern crate apollo;
+use apollo::Position;
 
 #[derive(Clone, Debug, Default)]
 pub struct PerftResults {
@@ -78,7 +78,7 @@ mod initial_position {
 
     #[test]
     fn perft_1() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             1);
         assert_eq!(20, results.nodes);
@@ -92,7 +92,7 @@ mod initial_position {
 
     #[test]
     fn perft_2() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             2);
         assert_eq!(400, results.nodes);
@@ -106,7 +106,7 @@ mod initial_position {
 
     #[test]
     fn perft_3() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             3);
         assert_eq!(8902, results.nodes);
@@ -120,7 +120,7 @@ mod initial_position {
 
     #[test]
     fn perft_4() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             4);
         assert_eq!(197281, results.nodes);
@@ -135,7 +135,7 @@ mod initial_position {
     #[test]
     #[ignore]
     fn perft_5() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                             5);
         assert_eq!(4865609, results.nodes);
@@ -153,7 +153,7 @@ mod kiwipete {
 
     #[test]
     fn perft_1() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             1);
         assert_eq!(48, results.nodes);
@@ -167,7 +167,7 @@ mod kiwipete {
 
     #[test]
     fn perft_2() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             2);
         assert_eq!(2039, results.nodes);
@@ -181,7 +181,7 @@ mod kiwipete {
 
     #[test]
     fn perft_3() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
                             3);
         assert_eq!(97862, results.nodes);
@@ -199,21 +199,21 @@ mod position_4 {
 
     #[test]
     fn perft_1() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 1);
         assert_eq!(6, results.nodes);
     }
 
     #[test]
     fn perft_2() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 2);
         assert_eq!(264, results.nodes);
     }
 
     #[test]
     fn perft_3() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 3);
         assert_eq!(9467, results.nodes);
     }
@@ -221,7 +221,7 @@ mod position_4 {
     #[test]
     #[ignore]
     fn perft_4() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4);
         assert_eq!(422333, results.nodes);
     }
@@ -229,7 +229,7 @@ mod position_4 {
     #[test]
     #[ignore]
     fn perft_5() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 5);
         assert_eq!(15833292, results.nodes);
     }
@@ -240,7 +240,7 @@ mod position_5 {
 
     #[test]
     fn perft_1() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
                             1);
         assert_eq!(44, results.nodes);
@@ -248,7 +248,7 @@ mod position_5 {
 
     #[test]
     fn perft_2() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
                             2);
         assert_eq!(1486, results.nodes);
@@ -256,7 +256,7 @@ mod position_5 {
 
     #[test]
     fn perft_3() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
                             3);
         assert_eq!(62379, results.nodes);
@@ -265,7 +265,7 @@ mod position_5 {
     #[test]
     #[ignore]
     fn perft_4() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
                             4);
         assert_eq!(2103487, results.nodes);
@@ -274,7 +274,7 @@ mod position_5 {
     #[test]
     #[ignore]
     fn perft_5() {
-        apollo_engine::initialize();
+        apollo::initialize();
         let results = perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
                             5);
         assert_eq!(89941194, results.nodes);

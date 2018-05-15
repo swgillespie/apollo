@@ -5,12 +5,12 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-extern crate apollo_engine;
-use apollo_engine::{Position, Color, Square, Move};
+extern crate apollo;
+use apollo::{Position, Color, Square, Move};
 
 #[test]
 fn smoke_test_starting_position() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         .unwrap();
 
@@ -20,7 +20,7 @@ fn smoke_test_starting_position() {
 
 #[test]
 fn fools_mate_check() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1")
         .unwrap();
 
@@ -32,7 +32,7 @@ fn fools_mate_check() {
 
 #[test]
 fn sliding_piece_pin() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("8/8/4q3/8/8/8/4P3/4K3 w - - 0 1").unwrap();
 
     // white is not checked, the white pawn is blocking the queen
@@ -41,7 +41,7 @@ fn sliding_piece_pin() {
 
 #[test]
 fn position_5_bug_1_absolute_pin() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("rnR2k1r/pp1qbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 0 1")
         .unwrap();
 
@@ -51,7 +51,7 @@ fn position_5_bug_1_absolute_pin() {
 
 #[test]
 fn stalemate_smoke() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("7k/5K2/6Q1/8/8/8/8/8 b - - 0 1").unwrap();
 
     // black's turn to move. black is not in check but black has no legal moves.
@@ -63,7 +63,7 @@ fn stalemate_smoke() {
 
 #[test]
 fn fifty_move_rule_smoke() {
-    apollo_engine::initialize();
+    apollo::initialize();
     let mut pos = Position::from_fen("8/7k/6R1/5K2/1r3B2/8/8/8 w - - 49 121").unwrap();
 
     // white's turn to move, the game is not over

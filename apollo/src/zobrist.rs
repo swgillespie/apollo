@@ -70,7 +70,7 @@ fn castle_hash(offset: usize) -> u64 {
 /// of starting positions.
 pub fn hash(pos: &Position) -> u64 {
     let mut running_hash = 0;
-    for sq_idx in (Square::A1 as usize)...(Square::H8 as usize) {
+    for sq_idx in (Square::A1 as usize)..=(Square::H8 as usize) {
         let sq = FromPrimitive::from_u64(sq_idx as u64).unwrap();
         for color in &[Color::White, Color::Black] {
             for piece in &[PieceKind::Pawn,

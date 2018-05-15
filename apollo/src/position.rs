@@ -69,7 +69,7 @@ impl Position {
     ///
     /// # Example
     /// ```
-    /// use apollo_engine::{Position, Square};
+    /// use apollo::{Position, Square};
     ///
     /// let pos = Position::from_fen("8/8/8/8/8/8/2R5/8 w KQkq - 0 1").unwrap();
     /// assert!(pos.piece_at(Square::C2).is_some());
@@ -199,7 +199,7 @@ impl Position {
         let mut pos = Position::new();
         let str_ref = fen.as_ref();
         let ref mut iter = str_ref.chars().peekable();
-        for rank in ((Rank::Rank1 as usize)...(Rank::Rank8 as usize)).rev() {
+        for rank in ((Rank::Rank1 as usize)..=(Rank::Rank8 as usize)).rev() {
             let mut file = File::A as usize;
             while file <= File::H as usize {
                 let c = peek(iter)?;
@@ -257,7 +257,7 @@ impl Position {
     ///
     /// # Example
     /// ```
-    /// use apollo_engine::Position;
+    /// use apollo::Position;
     ///
     /// let fen = "8/8/8/4B3/8/8/8/8 w KQkq - 0 1";
     /// let position = Position::from_fen(fen).unwrap();
@@ -265,10 +265,10 @@ impl Position {
     /// ```
     pub fn as_fen(&self) -> String {
         let mut string = String::new();
-        for rank_idx in ((Rank::Rank1 as usize)...(Rank::Rank8 as usize)).rev() {
+        for rank_idx in ((Rank::Rank1 as usize)..=(Rank::Rank8 as usize)).rev() {
             let rank = FromPrimitive::from_u64(rank_idx as u64).unwrap();
             let mut empty_squares = 0;
-            for file_idx in (File::A as usize)...(File::H as usize) {
+            for file_idx in (File::A as usize)..=(File::H as usize) {
                 let file = FromPrimitive::from_u64(file_idx as u64).unwrap();
                 let sq = Square::of(rank, file);
                 if let Some(piece) = self.piece_at(sq) {
@@ -345,7 +345,7 @@ impl Position {
     ///
     /// # Example
     /// ```
-    /// use apollo_engine::{Square, Piece, PieceKind, Position, Color};
+    /// use apollo::{Square, Piece, PieceKind, Position, Color};
     ///
     /// let mut position = Position::new();
     /// let piece = Piece::new(PieceKind::Pawn, Color::White);
@@ -392,7 +392,7 @@ impl Position {
             return None;
         };
 
-        for piece in 0...5 {
+        for piece in 0..=5 {
             // pawn through king
             let board = self.boards_by_piece[piece + board_offset];
             if board.test(square) {
@@ -891,9 +891,9 @@ impl Debug for Position {
 
 impl Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        for rank_idx in ((Rank::Rank1 as u8)...(Rank::Rank8 as u8)).rev() {
+        for rank_idx in ((Rank::Rank1 as u8)..=(Rank::Rank8 as u8)).rev() {
             let rank: Rank = FromPrimitive::from_u8(rank_idx).unwrap();
-            for file_idx in (File::A as u8)...(File::H as u8) {
+            for file_idx in (File::A as u8)..=(File::H as u8) {
                 let file: File = FromPrimitive::from_u8(file_idx).unwrap();
                 let sq = Square::of(rank, file);
                 if let Some(piece) = self.piece_at(sq) {
@@ -906,12 +906,12 @@ impl Display for Position {
             writeln!(f, "| {}", (rank_idx + 49) as char)?
         }
 
-        for _ in (File::A as u8)...(File::H as u8) {
+        for _ in (File::A as u8)..=(File::H as u8) {
             write!(f, "---")?;
         }
 
         writeln!(f, "")?;
-        for file_idx in (File::A as u8)...(File::H as u8) {
+        for file_idx in (File::A as u8)..=(File::H as u8) {
             write!(f, " {} ", (file_idx + 97) as char)?
         }
 
