@@ -30,6 +30,7 @@ extern crate rand;
 #[cfg(test)]
 extern crate test;
 
+mod engine;
 mod types;
 mod bitboard;
 mod attacks;
@@ -42,6 +43,7 @@ pub use types::{Square, Rank, File, Color, Piece, PieceKind};
 pub use moves::Move;
 pub use position::{Position, FenParseError};
 pub use bitboard::{Bitboard, BitboardIterator};
+pub use engine::Engine;
 
 pub fn initialize() {
     attacks::initialize();

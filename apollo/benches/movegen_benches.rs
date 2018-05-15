@@ -7,15 +7,15 @@
 // except according to those terms.
 #![feature(test)]
 
-extern crate apollo_engine;
+extern crate apollo;
 extern crate test;
 
-use apollo_engine::Position;
+use apollo::Position;
 use test::Bencher;
 
 #[bench]
 fn midgame_move_generation(b: &mut Bencher) {
-    apollo_engine::initialize();
+    apollo::initialize();
     let pos = Position::from_fen("r3k1nr/pb1p1ppp/2nb2q1/1B6/3QP3/2N2N2/PP3PPP/R1B1R1K1 w kq - 0 1").unwrap();
     b.iter(|| pos.pseudolegal_moves().collect::<Vec<_>>());
 }
