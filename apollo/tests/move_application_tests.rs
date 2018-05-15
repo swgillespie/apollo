@@ -6,11 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 extern crate apollo;
-use apollo::{Position, Move, Square, Color, PieceKind};
+use apollo::{Engine, Move, Square, Color, PieceKind};
 
 #[test]
 fn smoke_test_opening_pawn() {
-    let mut pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 2 1")
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 2 1")
         .unwrap();
 
     // nothing fancy, move a pawn up one.
@@ -38,8 +39,9 @@ fn smoke_test_opening_pawn() {
 
 #[test]
 fn en_passant_reset() {
+    let engine = Engine::new();
     // EP square at e3, black to move
-    let mut pos = Position::from_fen("8/8/8/8/4Pp2/8/8/8 b - e3 0 1").unwrap();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/4Pp2/8/8/8 b - e3 0 1").unwrap();
 
     // black not taking EP opportunity
     pos.apply_move(Move::quiet(Square::F4, Square::F3));
@@ -51,8 +53,9 @@ fn en_passant_reset() {
 
 #[test]
 fn double_pawn_push_sets_ep() {
+    let engine = Engine::new();
     // white to move
-    let mut pos = Position::from_fen("8/8/8/8/8/8/4P3/8 w - - 0 1").unwrap();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/4P3/8 w - - 0 1").unwrap();
 
     // white double-pawn pushes
     pos.apply_move(Move::double_pawn_push(Square::E2, Square::E4));
@@ -64,7 +67,8 @@ fn double_pawn_push_sets_ep() {
 
 #[test]
 fn basic_capture() {
-    let mut pos = Position::from_fen("8/8/8/8/5p2/4P3/8/8 w - - 2 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/5p2/4P3/8/8 w - - 2 1").unwrap();
     pos.apply_move(Move::capture(Square::E3, Square::F4));
 
     // There should be a white pawn on F4
@@ -82,7 +86,8 @@ fn basic_capture() {
 
 #[test]
 fn non_pawn_quiet_move() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/4B3/8 w - - 5 2").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/4B3/8 w - - 5 2").unwrap();
     pos.apply_move(Move::quiet(Square::E2, Square::G4));
 
     // the halfmove clock should not be reset.
@@ -91,7 +96,8 @@ fn non_pawn_quiet_move() {
 
 #[test]
 fn moving_king_castle_status() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
 
     // white's turn to move, white moves its king.
     pos.apply_move(Move::quiet(Square::E1, Square::E2));
@@ -103,7 +109,8 @@ fn moving_king_castle_status() {
 
 #[test]
 fn moving_kingside_rook_castle_status() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/8/4K2R w KQ - 0 1").unwrap();
 
     // white's turn to move, white moves its kingside rook.
     pos.apply_move(Move::quiet(Square::H1, Square::G1));
@@ -115,7 +122,8 @@ fn moving_kingside_rook_castle_status() {
 
 #[test]
 fn moving_queenside_rook_castle_status() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/8/R3K3 w KQ - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/8/R3K3 w KQ - 0 1").unwrap();
 
     // white's turn to move, white moves its queenside rook.
     pos.apply_move(Move::quiet(Square::A1, Square::B1));
@@ -127,10 +135,11 @@ fn moving_queenside_rook_castle_status() {
 
 #[test]
 fn rook_capture_castle_status() {
+    let engine = Engine::new();
     // tests that we can't capture if there's no rook on the target
     // square, even if the rooks themselves never moved (i.e. they
     // were captured on their starting square)
-    let mut pos = Position::from_fen("8/8/8/8/8/7r/4P3/R3K2R b KQ - 0 1").unwrap();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/7r/4P3/R3K2R b KQ - 0 1").unwrap();
 
     // black to move, black captures the rook at H1
     pos.apply_move(Move::capture(Square::H3, Square::H1));
@@ -157,9 +166,10 @@ fn rook_capture_castle_status() {
 
 #[test]
 fn en_passant_capture() {
+    let engine = Engine::new();
     // tests that we remove an ep-captured piece from its
     // actual location and not try to remove the EP-square
-    let mut pos = Position::from_fen("8/8/8/3pP3/8/8/8/8 w - d6 0 1").unwrap();
+    let mut pos = engine.new_position_from_fen("8/8/8/3pP3/8/8/8/8 w - d6 0 1").unwrap();
 
     // white to move, white EP-captures the pawn
     pos.apply_move(Move::en_passant(Square::E5, Square::D6));
@@ -176,7 +186,8 @@ fn en_passant_capture() {
 
 #[test]
 fn basic_promotion() {
-    let mut pos = Position::from_fen("8/4P3/8/8/8/8/8/8 w - - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/4P3/8/8/8/8/8/8 w - - 0 1").unwrap();
 
     // white to move, white promotes the pawn on e7
     pos.apply_move(Move::promotion(Square::E7, Square::E8, PieceKind::Queen));
@@ -189,7 +200,8 @@ fn basic_promotion() {
 
 #[test]
 fn basic_promote_capture() {
-    let mut pos = Position::from_fen("5b2/4P3/8/8/8/8/8/8 w - - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("5b2/4P3/8/8/8/8/8/8 w - - 0 1").unwrap();
 
     // white to move, white promote-captures the pawn on e7 and captures
     // the bishop
@@ -203,7 +215,8 @@ fn basic_promote_capture() {
 
 #[test]
 fn queenside_castle() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/8/R3K3 w Q - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/8/R3K3 w Q - 0 1").unwrap();
 
     // white to move, white castles queenside
     pos.apply_move(Move::queenside_castle(Square::E1, Square::C1));
@@ -219,7 +232,8 @@ fn queenside_castle() {
 
 #[test]
 fn kingside_castle() {
-    let mut pos = Position::from_fen("8/8/8/8/8/8/8/4K2R w K - 0 1").unwrap();
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("8/8/8/8/8/8/8/4K2R w K - 0 1").unwrap();
     
     // white to move, white castles kingside
     pos.apply_move(Move::kingside_castle(Square::E1, Square::G1));

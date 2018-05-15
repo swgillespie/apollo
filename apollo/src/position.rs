@@ -8,11 +8,11 @@
 use std::fmt::{self, Debug, Display, Write};
 use std::vec::IntoIter;
 use std::hash::{Hash, Hasher};
+use engine::Engine;
 use num_traits::FromPrimitive;
 use bitboard::Bitboard;
 use types::{self, Square, Piece, Color, CastleStatus, Rank, File, PieceKind, Direction};
 use moves::Move;
-use attacks;
 use movegen;
 use zobrist;
 
@@ -38,7 +38,8 @@ pub enum FenParseError {
 /// contains all informatio necessary to compute legal moves and advance the
 /// game. Moves can be applied to Positions to advance the game state.
 #[derive(Clone)]
-pub struct Position {
+pub struct Position<'e> {
+    engine: &'e Engine,
     boards_by_piece: [Bitboard; 12],
     boards_by_color: [Bitboard; 2],
     en_passant_square: Option<Square>,
@@ -49,10 +50,11 @@ pub struct Position {
     zobrist_hash: u64,
 }
 
-impl Position {
+impl<'e> Position<'e> {
     /// Constructs a new, empty Position.
-    pub const fn new() -> Position {
+    pub fn new(engine: &'e Engine) -> Position<'e> {
         Position {
+            engine: engine,
             boards_by_piece: [Bitboard::none(); 12],
             boards_by_color: [Bitboard::none(); 2],
             en_passant_square: None,
@@ -74,7 +76,7 @@ impl Position {
     /// let pos = Position::from_fen("8/8/8/8/8/8/2R5/8 w KQkq - 0 1").unwrap();
     /// assert!(pos.piece_at(Square::C2).is_some());
     /// ```
-    pub fn from_fen<S: AsRef<str>>(fen: S) -> Result<Position, FenParseError> {
+    pub fn from_fen<S: AsRef<str>>(engine: &'e Engine, fen: S) -> Result<Position<'e>, FenParseError> {
         use std::str::Chars;
         use std::iter::Peekable;
 
@@ -196,7 +198,7 @@ impl Position {
             buf.parse::<u32>().map_err(|_| FenParseError::InvalidFullmove)
         }
 
-        let mut pos = Position::new();
+        let mut pos = Position::new(engine);
         let str_ref = fen.as_ref();
         let ref mut iter = str_ref.chars().peekable();
         for rank in ((Rank::Rank1 as usize)..=(Rank::Rank8 as usize)).rev() {
@@ -674,43 +676,43 @@ impl Position {
                         self.boards_by_color[Color::Black as usize];
         let mut board = Bitboard::none();
         for queen in self.queens(color) {
-            if attacks::queen_attacks(queen, occupancy).test(square) {
+            if self.engine.attack_table().queen_attacks(queen, occupancy).test(square) {
                 board.set(queen);
             }
         }
 
         for rook in self.rooks(color) {
-            if attacks::rook_attacks(rook, occupancy).test(square) {
+            if self.engine.attack_table().rook_attacks(rook, occupancy).test(square) {
                 board.set(rook);
             }
         }
 
         for bishop in self.bishops(color) {
-            if attacks::bishop_attacks(bishop, occupancy).test(square) {
+            if self.engine.attack_table().bishop_attacks(bishop, occupancy).test(square) {
                 board.set(bishop);
             }
         }
 
         for knight in self.knights(color) {
-            if attacks::knight_attacks(knight).test(square) {
+            if self.engine.attack_table().knight_attacks(knight).test(square) {
                 board.set(knight);
             }
         }
 
         for pawn in self.pawns(color) {
-            if attacks::pawn_attacks(pawn, color).test(square) {
+            if self.engine.attack_table().pawn_attacks(pawn, color).test(square) {
                 board.set(pawn);
             }
 
             if let Some(ep_square) = self.en_passant_square {
-                if ep_square == square && attacks::pawn_attacks(pawn, color).test(ep_square) {
+                if ep_square == square && self.engine.attack_table().pawn_attacks(pawn, color).test(ep_square) {
                     board.set(pawn);
                 }
             }
         }
 
         for opp_king in self.kings(color) {
-            if attacks::king_attacks(opp_king).test(square) {
+            if self.engine.attack_table().king_attacks(opp_king).test(square) {
                 board.set(opp_king);
             }
         }
@@ -882,14 +884,14 @@ impl Position {
     }
 }
 
-impl Debug for Position {
+impl<'e> Debug for Position<'e> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         let fen = self.as_fen();
         f.debug_tuple("Position").field(&fen).finish()
     }
 }
 
-impl Display for Position {
+impl<'e> Display for Position<'e> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         for rank_idx in ((Rank::Rank1 as u8)..=(Rank::Rank8 as u8)).rev() {
             let rank: Rank = FromPrimitive::from_u8(rank_idx).unwrap();
@@ -920,15 +922,9 @@ impl Display for Position {
     }
 }
 
-impl Default for Position {
-    fn default() -> Position {
-        Position::new()
-    }
-}
-
 // Note that Position does not implement Eq, so it's still not
 // suitable for being the key of a hash table.
-impl Hash for Position {
+impl<'e> Hash for Position<'e> {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         hasher.write_u64(self.zobrist_hash);
     }

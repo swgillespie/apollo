@@ -8,13 +8,14 @@
 extern crate apollo;
 extern crate num_traits; 
 
-use apollo::{Position, FenParseError};
+use apollo::{Engine, FenParseError};
 use apollo::{Square, Color, File, Rank, Piece, PieceKind};
 use num_traits::FromPrimitive;
 
 #[test]
 fn fen_smoke() {
-    let pos = Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 0").unwrap();
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - 0 0").unwrap();
 
     // white's turn to move.
     assert_eq!(Color::White, pos.side_to_move());
@@ -35,7 +36,8 @@ fn fen_smoke() {
 
 #[test]
 fn starting_position() {
-    let pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         .unwrap();
 
     let check_square = |square: &'static str, piece: Piece| {
@@ -100,79 +102,92 @@ fn starting_position() {
 
 #[test]
 fn empty() {
-    let err = Position::from_fen("").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("").unwrap_err();
     assert_eq!(FenParseError::UnexpectedEnd, err);
 }
 
 #[test]
 fn unknown_piece() {
-    let err = Position::from_fen("z7/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("z7/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
     assert_eq!(FenParseError::UnknownPiece, err);
 }
 
 #[test]
 fn invalid_digit() {
-    let err = Position::from_fen("9/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("9/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
     assert_eq!(FenParseError::InvalidDigit, err);
 }
 
 #[test]
 fn not_sum_to_8() {
-    let err = Position::from_fen("pppp5/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("pppp5/8/8/8/8/8/8/8 w - - 0 0").unwrap_err();
     assert_eq!(FenParseError::FileDoesNotSumToEight, err);
 }
 
 #[test]
 fn bad_side_to_move() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 c - - 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 c - - 0 0").unwrap_err();
     assert_eq!(FenParseError::InvalidSideToMove, err);
 }
 
 #[test]
 fn bad_castle_status() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w a - 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w a - 0 0").unwrap_err();
     assert_eq!(FenParseError::InvalidCastle, err);
 }
 
 #[test]
 fn bad_en_passant() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - 88 0 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - 88 0 0").unwrap_err();
     assert_eq!(FenParseError::InvalidEnPassant, err);
 }
 
 #[test]
 fn empty_halfmove() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - q 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - q 0").unwrap_err();
     assert_eq!(FenParseError::EmptyHalfmove, err);
 }
 
 #[test]
 fn invalid_halfmove() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - 4294967296 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - 4294967296 0").unwrap_err();
     assert_eq!(FenParseError::InvalidHalfmove, err);
 }
 
 #[test]
 fn empty_fullmove() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 q").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - 0 q").unwrap_err();
     assert_eq!(FenParseError::EmptyFullmove, err);
 }
 
 #[test]
 fn fullmove_early_end() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - 0").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - 0").unwrap_err();
     assert_eq!(FenParseError::UnexpectedEnd, err);
 }
 
 
 #[test]
 fn invalid_fullmove() {
-    let err = Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 4294967296").unwrap_err();
+    let engine = Engine::new();
+    let err = engine.new_position_from_fen("8/8/8/8/8/8/8/8 w - - 0 4294967296").unwrap_err();
     assert_eq!(FenParseError::InvalidFullmove, err);
 }
 
 fn fen_roundtrip(fen: &'static str) {
-    let pos = Position::from_fen(fen).unwrap();
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen(fen).unwrap();
     assert_eq!(fen, pos.as_fen());
 }
 

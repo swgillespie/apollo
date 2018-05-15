@@ -7,11 +7,11 @@
 // except according to those terms.
 extern crate apollo;
 use std::collections::HashSet;
-use apollo::{Move, Position, Square, PieceKind};
+use apollo::{Engine, Move, Square, PieceKind};
 
 fn assert_moves_generated(fen: &'static str, moves: &[Move]) {
-    apollo::initialize();
-    let pos = Position::from_fen(fen).unwrap();
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves_hash {
         if !moves.contains(&mov) {
@@ -26,8 +26,8 @@ fn assert_moves_generated(fen: &'static str, moves: &[Move]) {
 }
 
 fn assert_moves_contains(fen: &'static str, moves: &[Move]) {
-    apollo::initialize();
-    let pos = Position::from_fen(fen).unwrap();
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves {
         if !moves_hash.contains(mov) {
@@ -38,8 +38,8 @@ fn assert_moves_contains(fen: &'static str, moves: &[Move]) {
 }
 
 fn assert_moves_does_not_contain(fen: &'static str, moves: &[Move]) {
-    apollo::initialize();
-    let pos = Position::from_fen(fen).unwrap();
+    let engine = Engine::new();
+    let pos = engine.new_position_from_fen(fen).unwrap();
     let moves_hash : HashSet<_> = pos.pseudolegal_moves().collect();
     for mov in moves {
         if moves_hash.contains(mov) {

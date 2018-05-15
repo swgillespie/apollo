@@ -7,15 +7,15 @@
 // except according to those terms.
 extern crate apollo;
 
-use apollo::{Position, Square, Move};
+use apollo::{Engine, Square, Move};
 
 // it's kinda hard to test a hash function, but here's
 // a smoke test regardless
 
 #[test]
 fn zobrist_smoke() {
-    apollo::initialize();
-    let mut pos = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    let engine = Engine::new();
+    let mut pos = engine.new_position_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
         .unwrap();
     
     let hash = pos.hash();    

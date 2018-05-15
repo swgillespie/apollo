@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 use attacks::AttackTable;
+use position::{Position, FenParseError};
 
 pub struct Engine {
     attack_table: Box<AttackTable>
@@ -20,5 +21,13 @@ impl Engine {
 
     pub fn attack_table(&self) -> &AttackTable {
         &self.attack_table
+    }
+
+    pub fn new_position<'e>(&'e self) -> Position<'e> {
+        Position::new(self)
+    }
+
+    pub fn new_position_from_fen<'e, S: AsRef<str>>(&'e self, fen: S) -> Result<Position<'e>, FenParseError> {
+        Position::from_fen(self, fen)
     }
 }

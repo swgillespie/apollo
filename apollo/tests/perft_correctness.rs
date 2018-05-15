@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 extern crate apollo;
-use apollo::Position;
+use apollo::{Engine, Position};
 
 #[derive(Clone, Debug, Default)]
 pub struct PerftResults {
@@ -21,7 +21,8 @@ pub struct PerftResults {
 
 pub fn perft(fen: &str, depth: u32) -> PerftResults {
     let mut results = Default::default();
-    let position = Position::from_fen(fen).unwrap();
+    let engine = Engine::new();
+    let position = engine.new_position_from_fen(fen).unwrap();
     perft_impl(position, depth, &mut results);
     results
 }
