@@ -48,7 +48,7 @@ fn add_pawns(pos: &Position, moves: &mut Vec<Move>) {
         }
 
         // non-ep capturing moves
-        for attack_sq in attacks::pawn_attacks(pawn, color) {
+        for attack_sq in pos.engine().attack_table().pawn_attacks(pawn, color) {
             if enemy_piece_map.test(attack_sq) {
                 assert!(!allied_piece_map.test(attack_sq));
                 if attack_sq.rank() == promo_rank {
@@ -65,7 +65,7 @@ fn add_pawns(pos: &Position, moves: &mut Vec<Move>) {
         // en-passant
         if let Some(ep_square) = pos.en_passant_square() {
             // would this be a normal legal attack for this pawn?
-            if attacks::pawn_attacks(pawn, color).test(ep_square) {
+            if pos.engine().attack_table().pawn_attacks(pawn, color).test(ep_square) {
                 // the attack square is directly behind the pawn that was pushed
                 let attack_sq =
                     ep_square.towards(ep_dir).expect("en-passant piece square not on board");
@@ -82,7 +82,7 @@ fn add_knights(pos: &Position, moves: &mut Vec<Move>) {
     let enemy_piece_map = pos.color(color.toggle());
     let allied_piece_map = pos.color(color);
     for knight in pos.knights(color) {
-        for atk in attacks::knight_attacks(knight) {
+        for atk in pos.engine().attack_table().knight_attacks(knight) {
             if enemy_piece_map.test(atk) {
                 moves.push(Move::capture(knight, atk));
             } else if !allied_piece_map.test(atk) {
@@ -119,7 +119,7 @@ fn add_kings(pos: &Position, moves: &mut Vec<Move>) {
     let piece_map = enemy_piece_map | allied_piece_map;
     assert!(pos.kings(color).count() <= 1);
     if let Some(king) = pos.kings(color).first() {
-        for atk in attacks::king_attacks(king) {
+        for atk in pos.engine().attack_table().king_attacks(king) {
             if enemy_piece_map.test(atk) {
                 moves.push(Move::capture(king, atk));
             } else if !allied_piece_map.test(atk) {
@@ -164,15 +164,15 @@ pub fn generate_moves(pos: &Position, moves: &mut Vec<Move>) {
     add_knights(pos, moves);
     add_sliding_pieces(pos,
                        moves,
-                       |s, b| attacks::bishop_attacks(s, b),
+                       |s, b| pos.engine().attack_table().bishop_attacks(s, b),
                        |c| pos.bishops(c));
     add_sliding_pieces(pos,
                        moves,
-                       |s, b| attacks::rook_attacks(s, b),
+                       |s, b| pos.engine().attack_table().rook_attacks(s, b),
                        |c| pos.rooks(c));
     add_sliding_pieces(pos,
                        moves,
-                       |s, b| attacks::queen_attacks(s, b),
+                       |s, b| pos.engine().attack_table().queen_attacks(s, b),
                        |c| pos.queens(c));
     add_kings(pos, moves);
 }

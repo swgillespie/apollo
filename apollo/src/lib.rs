@@ -44,8 +44,3 @@ pub use moves::Move;
 pub use position::{Position, FenParseError};
 pub use bitboard::{Bitboard, BitboardIterator};
 pub use engine::Engine;
-
-pub fn initialize() {
-    attacks::initialize();
-    zobrist::initialize();
-}

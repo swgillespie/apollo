@@ -882,6 +882,11 @@ impl<'e> Position<'e> {
 
         return true;
     }
+
+    #[inline]
+    pub fn engine(&self) -> &'e Engine {
+        self.engine
+    }
 }
 
 impl<'e> Debug for Position<'e> {
