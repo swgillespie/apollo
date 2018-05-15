@@ -41,9 +41,9 @@
 //!
 //! Thanks to https://chessprogramming.wikispaces.com/Encoding+Moves
 //! for the details.
-use std::fmt::{self, Write};
 use num_traits::FromPrimitive;
-use types::{Square, PieceKind};
+use std::fmt::{self, Write};
+use types::{PieceKind, Square};
 
 const SOURCE_MASK: u16 = 0xFC00;
 const DESTINATION_MASK: u16 = 0x03F0;
@@ -236,24 +236,18 @@ impl Move {
 
     /// Returns an UCI-compatible string representation of
     /// this move.
-    /// # Example
-    /// ```
-    /// use apollo::{Move, Square};
-    ///
-    /// let mov = Move::quiet(Square::E4, Square::E5);
-    /// assert_eq!("e4e5", mov.as_uci());
-    /// ```
     pub fn as_uci(self) -> String {
         let mut buf = String::new();
         if !self.is_promotion() {
             write!(&mut buf, "{}{}", self.source(), self.destination()).unwrap();
         } else {
-            write!(&mut buf,
-                   "{}{}{}",
-                   self.source(),
-                   self.destination(),
-                   self.promotion_piece().as_char())
-                    .unwrap();
+            write!(
+                &mut buf,
+                "{}{}{}",
+                self.source(),
+                self.destination(),
+                self.promotion_piece().as_char()
+            ).unwrap();
         }
 
         buf
@@ -266,19 +260,21 @@ impl Move {
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f,
-               "{} -> {} (capture: {}, promotion: {})",
-               self.source(),
-               self.destination(),
-               self.is_capture(),
-               self.is_promotion())
+        write!(
+            f,
+            "{} -> {} (capture: {}, promotion: {})",
+            self.source(),
+            self.destination(),
+            self.is_capture(),
+            self.is_promotion()
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use types::{Square, PieceKind};
     use super::Move;
+    use types::{PieceKind, Square};
 
     #[test]
     fn quiet() {

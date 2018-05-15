@@ -7,20 +7,27 @@
 // except according to those terms.
 use attacks::AttackTable;
 use position::{Position, FenParseError};
+use zobrist::ZobristHasher;
 
 pub struct Engine {
-    attack_table: Box<AttackTable>
+    attack_table: Box<AttackTable>,
+    hasher: Box<ZobristHasher>
 }
 
 impl Engine {
     pub fn new() -> Engine {
         Engine {
-            attack_table: Box::new(AttackTable::new())
+            attack_table: Box::new(AttackTable::new()),
+            hasher: Box::new(ZobristHasher::new())
         }
     }
 
-    pub fn attack_table(&self) -> &AttackTable {
+    pub(crate) fn attack_table(&self) -> &AttackTable {
         &self.attack_table
+    }
+
+    pub(crate) fn hasher(&self) -> &ZobristHasher {
+        &self.hasher
     }
 
     pub fn new_position<'e>(&'e self) -> Position<'e> {

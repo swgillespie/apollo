@@ -14,30 +14,34 @@
 //! A bitboard is a single 64-bit integer and it behaves like a set, using
 //! bitwise operations for the normal set operations (union, intersection,
 //! set complement, etc.).
+use num_traits::FromPrimitive;
 use std::default::Default;
+use std::fmt;
 use std::iter::Iterator;
 use std::ops;
-use std::fmt;
-use types::{Square, Rank, File};
-use num_traits::FromPrimitive;
+use types::{File, Rank, Square};
 
-const RANK_MASKS: [u64; 8] = [0x00000000000000FF,
-                              0x000000000000FF00,
-                              0x0000000000FF0000,
-                              0x00000000FF000000,
-                              0x000000FF00000000,
-                              0x0000FF0000000000,
-                              0x00FF000000000000,
-                              0xFF00000000000000];
+const RANK_MASKS: [u64; 8] = [
+    0x00000000000000FF,
+    0x000000000000FF00,
+    0x0000000000FF0000,
+    0x00000000FF000000,
+    0x000000FF00000000,
+    0x0000FF0000000000,
+    0x00FF000000000000,
+    0xFF00000000000000,
+];
 
-const FILE_MASKS: [u64; 8] = [0x0101010101010101,
-                              0x0202020202020202,
-                              0x0404040404040404,
-                              0x0808080808080808,
-                              0x1010101010101010,
-                              0x2020202020202020,
-                              0x4040404040404040,
-                              0x8080808080808080];
+const FILE_MASKS: [u64; 8] = [
+    0x0101010101010101,
+    0x0202020202020202,
+    0x0404040404040404,
+    0x0808080808080808,
+    0x1010101010101010,
+    0x2020202020202020,
+    0x4040404040404040,
+    0x8080808080808080,
+];
 
 /// A Bitboard is a 64-bit integer which one bit represents one of the
 /// eight squares on the board. Bitboards are used in a variety of scenarios
@@ -56,21 +60,21 @@ impl Default for Bitboard {
 impl Bitboard {
     /// Constructs a new bitboard from the given bits.
     #[inline]
-    pub const fn from_bits(bits: u64) -> Bitboard {
+    pub fn from_bits(bits: u64) -> Bitboard {
         Bitboard { bits: bits }
     }
 
     /// Constructs a new bitboard with all bits set to one, representing
     /// a complete set.
     #[inline]
-    pub const fn all() -> Bitboard {
+    pub fn all() -> Bitboard {
         Bitboard::from_bits(0xFFFFFFFFFFFFFFFF)
     }
 
     /// Constructs a new bitboard with all bits zeroed, representing
     /// the empty set.
     #[inline]
-    pub const fn none() -> Bitboard {
+    pub fn none() -> Bitboard {
         Bitboard::from_bits(0)
     }
 
@@ -95,27 +99,27 @@ impl Bitboard {
     /// Takes the bitwise and of two bitboards producing the set intersection
     /// of their contents.
     #[inline]
-    pub const fn and(&self, other: Bitboard) -> Bitboard {
+    pub fn and(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits & other.bits)
     }
 
     /// Takes the bitwise or of two bitboards producing the set union
     /// of their contents.
     #[inline]
-    pub const fn or(&self, other: Bitboard) -> Bitboard {
+    pub fn or(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits | other.bits)
     }
 
     /// Takes the bitwise exclusive or of two bitboards.
     #[inline]
-    pub const fn xor(&self, other: Bitboard) -> Bitboard {
+    pub fn xor(&self, other: Bitboard) -> Bitboard {
         Bitboard::from_bits(self.bits ^ other.bits)
     }
 
     /// Takes the bitwise complement of this bitboard, producing the set
     /// complement its contents.
     #[inline]
-    pub const fn not(&self) -> Bitboard {
+    pub fn not(&self) -> Bitboard {
         Bitboard::from_bits(!self.bits)
     }
 
@@ -128,20 +132,20 @@ impl Bitboard {
     /// Produces a bitboard with the components of this bitboard that
     /// lie on the given rank.
     #[inline]
-    pub const fn rank(&self, rank: Rank) -> Bitboard {
+    pub fn rank(&self, rank: Rank) -> Bitboard {
         self.and(Bitboard::from_bits(RANK_MASKS[rank as usize]))
     }
 
     /// Produces a bitboard with the components of this bitboard that
     /// lie on the given file.
     #[inline]
-    pub const fn file(&self, file: File) -> Bitboard {
+    pub fn file(&self, file: File) -> Bitboard {
         self.and(Bitboard::from_bits(FILE_MASKS[file as usize]))
     }
 
     /// Retireves the raw bits associated with this bitboard.
     #[inline]
-    pub const fn bits(&self) -> u64 {
+    pub fn bits(&self) -> u64 {
         self.bits
     }
 
@@ -155,7 +159,7 @@ impl Bitboard {
     /// Retrieves whether or not the set represented by this bitboard is
     /// the empty set.
     #[inline]
-    pub const fn empty(&self) -> bool {
+    pub fn empty(&self) -> bool {
         self.bits == 0
     }
 

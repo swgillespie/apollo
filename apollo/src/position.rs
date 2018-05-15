@@ -5,16 +5,15 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use std::fmt::{self, Debug, Display, Write};
-use std::vec::IntoIter;
-use std::hash::{Hash, Hasher};
-use engine::Engine;
-use num_traits::FromPrimitive;
 use bitboard::Bitboard;
-use types::{self, Square, Piece, Color, CastleStatus, Rank, File, PieceKind, Direction};
-use moves::Move;
+use engine::Engine;
 use movegen;
-use zobrist;
+use moves::Move;
+use num_traits::FromPrimitive;
+use std::fmt::{self, Debug, Display, Write};
+use std::hash::{Hash, Hasher};
+use std::vec::IntoIter;
+use types::{self, CastleStatus, Color, Direction, File, Piece, PieceKind, Rank, Square};
 
 /// Possible errors that can arise when parsing a FEN string into
 /// a `Position`.
@@ -68,17 +67,12 @@ impl<'e> Position<'e> {
 
     /// Constructs a new position from a FEN representation of a board
     /// position.
-    ///
-    /// # Example
-    /// ```
-    /// use apollo::{Position, Square};
-    ///
-    /// let pos = Position::from_fen("8/8/8/8/8/8/2R5/8 w KQkq - 0 1").unwrap();
-    /// assert!(pos.piece_at(Square::C2).is_some());
-    /// ```
-    pub fn from_fen<S: AsRef<str>>(engine: &'e Engine, fen: S) -> Result<Position<'e>, FenParseError> {
-        use std::str::Chars;
+    pub fn from_fen<S: AsRef<str>>(
+        engine: &'e Engine,
+        fen: S,
+    ) -> Result<Position<'e>, FenParseError> {
         use std::iter::Peekable;
+        use std::str::Chars;
 
         type Stream<'a> = Peekable<Chars<'a>>;
 
@@ -174,7 +168,8 @@ impl<'e> Position<'e> {
                 return Err(FenParseError::EmptyHalfmove);
             }
 
-            buf.parse::<u32>().map_err(|_| FenParseError::InvalidHalfmove)
+            buf.parse::<u32>()
+                .map_err(|_| FenParseError::InvalidHalfmove)
         }
 
         fn eat_fullmove<'a>(iter: &mut Stream<'a>) -> Result<u32, FenParseError> {
@@ -195,7 +190,8 @@ impl<'e> Position<'e> {
                 return Err(FenParseError::EmptyFullmove);
             }
 
-            buf.parse::<u32>().map_err(|_| FenParseError::InvalidFullmove)
+            buf.parse::<u32>()
+                .map_err(|_| FenParseError::InvalidFullmove)
         }
 
         let mut pos = Position::new(engine);
@@ -251,20 +247,11 @@ impl<'e> Position<'e> {
         pos.halfmove_clock = eat_halfmove(iter)?;
         eat(iter, ' ')?;
         pos.fullmove_clock = eat_fullmove(iter)?;
-        pos.zobrist_hash = zobrist::hash(&pos);
+        pos.zobrist_hash = pos.engine().hasher().hash(&pos);
         Ok(pos)
     }
 
     /// Returns a FEN representation of this position.
-    ///
-    /// # Example
-    /// ```
-    /// use apollo::Position;
-    ///
-    /// let fen = "8/8/8/4B3/8/8/8/8 w KQkq - 0 1";
-    /// let position = Position::from_fen(fen).unwrap();
-    /// assert_eq!(fen, position.as_fen());
-    /// ```
     pub fn as_fen(&self) -> String {
         let mut string = String::new();
         for rank_idx in ((Rank::Rank1 as usize)..=(Rank::Rank8 as usize)).rev() {
@@ -333,29 +320,17 @@ impl<'e> Position<'e> {
         }
 
         string.push(' ');
-        write!(&mut string,
-               "{} {}",
-               self.halfmove_clock,
-               self.fullmove_clock)
-                .unwrap();
+        write!(
+            &mut string,
+            "{} {}",
+            self.halfmove_clock, self.fullmove_clock
+        ).unwrap();
         string
     }
 
     /// Adds a piece to the board at the given square, returning `Ok` if
     /// the adding was successful (i.e. the space was unoccupied) and `Err`
     /// if the space was occupied.
-    ///
-    /// # Example
-    /// ```
-    /// use apollo::{Square, Piece, PieceKind, Position, Color};
-    ///
-    /// let mut position = Position::new();
-    /// let piece = Piece::new(PieceKind::Pawn, Color::White);
-    /// position.add_piece(Square::E4, piece);
-    /// let on_board = position.piece_at(Square::E4).unwrap();
-    /// assert_eq!(on_board.kind, PieceKind::Pawn);
-    /// assert_eq!(on_board.color, Color::White);
-    /// ```
     pub fn add_piece(&mut self, square: Square, piece: Piece) -> Result<(), ()> {
         if self.piece_at(square).is_some() {
             return Err(());
@@ -364,7 +339,9 @@ impl<'e> Position<'e> {
         self.boards_by_color[piece.color as usize].set(square);
         let offset = if piece.color == Color::White { 0 } else { 6 };
         self.boards_by_piece[piece.kind as usize + offset].set(square);
-        zobrist::modify_piece(&mut self.zobrist_hash, square, piece);
+        self.engine
+            .hasher()
+            .modify_piece(&mut self.zobrist_hash, square, piece);
         Ok(())
     }
 
@@ -376,7 +353,9 @@ impl<'e> Position<'e> {
             self.boards_by_color[piece.color as usize].unset(square);
             let offset = if piece.color == Color::White { 0 } else { 6 };
             self.boards_by_piece[piece.kind as usize + offset].unset(square);
-            zobrist::modify_piece(&mut self.zobrist_hash, square, piece);
+            self.engine
+                .hasher()
+                .modify_piece(&mut self.zobrist_hash, square, piece);
             Ok(())
         } else {
             Err(())
@@ -387,8 +366,7 @@ impl<'e> Position<'e> {
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
         let (board_offset, color) = if self.boards_by_color[Color::White as usize].test(square) {
             (0, Color::White)
-        } else if self.boards_by_color[Color::Black as usize]
-                      .test(square) {
+        } else if self.boards_by_color[Color::Black as usize].test(square) {
             (6, Color::Black)
         } else {
             return None;
@@ -430,8 +408,10 @@ impl<'e> Position<'e> {
                 mov.destination()
             };
 
-            let captured_piece = pos.piece_at(target_square).expect("no piece at capture square");
-            pos.remove_piece(target_square).expect("no piece at capture square");
+            let captured_piece = pos.piece_at(target_square)
+                .expect("no piece at capture square");
+            pos.remove_piece(target_square)
+                .expect("no piece at capture square");
 
             // if we are capturing a rook that has not moved from its initial
             // state (i.e. the opponent could have used it to legally castle),
@@ -482,20 +462,24 @@ impl<'e> Position<'e> {
             // quick out for null moves - don't change anything but the
             // side to move
             self.side_to_move = self.side_to_move.toggle();
-            zobrist::modify_side_to_move(&mut self.zobrist_hash);
+            self.engine
+                .hasher()
+                .modify_side_to_move(&mut self.zobrist_hash);
             return;
         }
 
-        let moving_piece =
-            self.piece_at(mov.source()).expect("moving from a square with no piece on it");
-        assert_eq!(self.side_to_move,
-                   moving_piece.color,
-                   "moving a piece that does not belong to the player");
+        let moving_piece = self.piece_at(mov.source())
+            .expect("moving from a square with no piece on it");
+        assert_eq!(
+            self.side_to_move, moving_piece.color,
+            "moving a piece that does not belong to the player"
+        );
 
         // the basic strategy here is to remove the piece from the start square
         // and add it to the target square, removing the piece at the target
         // square if this is a capture.
-        self.remove_piece(mov.source()).expect("source square has no piece");
+        self.remove_piece(mov.source())
+            .expect("source square has no piece");
         if mov.is_capture() {
             handle_piece_capture(self, mov);
         }
@@ -524,9 +508,11 @@ impl<'e> Position<'e> {
 
             let rook = self.piece_at(rook_sq).expect("rook not at destination");
             assert_eq!(PieceKind::Rook, rook.kind);
-            self.remove_piece(rook_sq).expect("empty castle destination");
+            self.remove_piece(rook_sq)
+                .expect("empty castle destination");
             // add the rook back at the rook castle location.
-            self.add_piece(new_rook_sq, rook).expect("rook castle square occupied");
+            self.add_piece(new_rook_sq, rook)
+                .expect("rook castle square occupied");
         }
 
         let piece_to_add = if mov.is_promotion() {
@@ -535,7 +521,8 @@ impl<'e> Position<'e> {
             moving_piece
         };
 
-        self.add_piece(mov.destination(), piece_to_add).expect("destination square was not empty");
+        self.add_piece(mov.destination(), piece_to_add)
+            .expect("destination square was not empty");
         if mov.is_double_pawn_push() {
             // double pawn pushes set the EP-square
             let ep_dir = match self.side_to_move {
@@ -545,15 +532,24 @@ impl<'e> Position<'e> {
 
             let sq = FromPrimitive::from_i8(mov.destination() as i8 + ep_dir.as_vector())
                 .expect("ep-square not on board");
-            zobrist::modify_en_passant(&mut self.zobrist_hash, self.en_passant_square, Some(sq));
+            self.engine.hasher().modify_en_passant(
+                &mut self.zobrist_hash,
+                self.en_passant_square,
+                Some(sq),
+            );
             self.en_passant_square = Some(sq);
         } else {
-            zobrist::modify_en_passant(&mut self.zobrist_hash, self.en_passant_square, None);
+            self.engine.hasher().modify_en_passant(
+                &mut self.zobrist_hash,
+                self.en_passant_square,
+                None,
+            );
             self.en_passant_square = None;
         }
 
-        if self.can_castle_kingside(self.side_to_move) ||
-           self.can_castle_queenside(self.side_to_move) {
+        if self.can_castle_kingside(self.side_to_move)
+            || self.can_castle_queenside(self.side_to_move)
+        {
             match moving_piece.kind {
                 PieceKind::King => {
                     // if it's the king that's moving, we can't castle in
@@ -563,8 +559,12 @@ impl<'e> Position<'e> {
                         Color::Black => types::BLACK_MASK,
                     };
 
-                    zobrist::modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
-                    zobrist::modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
+                    self.engine
+                        .hasher()
+                        .modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
+                    self.engine
+                        .hasher()
+                        .modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
                     self.castle_status &= !mask;
                 }
                 PieceKind::Rook => {
@@ -573,25 +573,30 @@ impl<'e> Position<'e> {
                         Color::Black => (Square::H8, Square::A8),
                     };
 
-                    if self.can_castle_queenside(self.side_to_move) &&
-                       mov.source() == queenside_rook {
+                    if self.can_castle_queenside(self.side_to_move)
+                        && mov.source() == queenside_rook
+                    {
                         let mask = match self.side_to_move {
                             Color::White => types::WHITE_O_O_O,
                             Color::Black => types::BLACK_O_O_O,
                         };
 
-                        zobrist::modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
+                        self.engine
+                            .hasher()
+                            .modify_queenside_castle(&mut self.zobrist_hash, self.side_to_move);
                         self.castle_status &= !mask;
                     }
 
-                    if self.can_castle_kingside(self.side_to_move) &&
-                       mov.source() == kingside_rook {
+                    if self.can_castle_kingside(self.side_to_move) && mov.source() == kingside_rook
+                    {
                         let mask = match self.side_to_move {
                             Color::White => types::WHITE_O_O,
                             Color::Black => types::BLACK_O_O,
                         };
 
-                        zobrist::modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
+                        self.engine
+                            .hasher()
+                            .modify_kingside_castle(&mut self.zobrist_hash, self.side_to_move);
                         self.castle_status &= !mask;
                     }
                 }
@@ -601,7 +606,9 @@ impl<'e> Position<'e> {
         }
 
         self.side_to_move = self.side_to_move.toggle();
-        zobrist::modify_side_to_move(&mut self.zobrist_hash);
+        self.engine
+            .hasher()
+            .modify_side_to_move(&mut self.zobrist_hash);
         if mov.is_capture() || moving_piece.kind == PieceKind::Pawn {
             self.halfmove_clock = 0;
         } else {
@@ -646,7 +653,7 @@ impl<'e> Position<'e> {
         self.pieces(color, PieceKind::Rook)
     }
 
-    #[inline]    
+    #[inline]
     pub fn queens(&self, color: Color) -> Bitboard {
         self.pieces(color, PieceKind::Queen)
     }
@@ -672,47 +679,76 @@ impl<'e> Position<'e> {
     }
 
     pub fn squares_attacking(&self, color: Color, square: Square) -> Bitboard {
-        let occupancy = self.boards_by_color[Color::White as usize] |
-                        self.boards_by_color[Color::Black as usize];
+        let occupancy = self.boards_by_color[Color::White as usize]
+            | self.boards_by_color[Color::Black as usize];
         let mut board = Bitboard::none();
         for queen in self.queens(color) {
-            if self.engine.attack_table().queen_attacks(queen, occupancy).test(square) {
+            if self.engine
+                .attack_table()
+                .queen_attacks(queen, occupancy)
+                .test(square)
+            {
                 board.set(queen);
             }
         }
 
         for rook in self.rooks(color) {
-            if self.engine.attack_table().rook_attacks(rook, occupancy).test(square) {
+            if self.engine
+                .attack_table()
+                .rook_attacks(rook, occupancy)
+                .test(square)
+            {
                 board.set(rook);
             }
         }
 
         for bishop in self.bishops(color) {
-            if self.engine.attack_table().bishop_attacks(bishop, occupancy).test(square) {
+            if self.engine
+                .attack_table()
+                .bishop_attacks(bishop, occupancy)
+                .test(square)
+            {
                 board.set(bishop);
             }
         }
 
         for knight in self.knights(color) {
-            if self.engine.attack_table().knight_attacks(knight).test(square) {
+            if self.engine
+                .attack_table()
+                .knight_attacks(knight)
+                .test(square)
+            {
                 board.set(knight);
             }
         }
 
         for pawn in self.pawns(color) {
-            if self.engine.attack_table().pawn_attacks(pawn, color).test(square) {
+            if self.engine
+                .attack_table()
+                .pawn_attacks(pawn, color)
+                .test(square)
+            {
                 board.set(pawn);
             }
 
             if let Some(ep_square) = self.en_passant_square {
-                if ep_square == square && self.engine.attack_table().pawn_attacks(pawn, color).test(ep_square) {
+                if ep_square == square
+                    && self.engine
+                        .attack_table()
+                        .pawn_attacks(pawn, color)
+                        .test(ep_square)
+                {
                     board.set(pawn);
                 }
             }
         }
 
         for opp_king in self.kings(color) {
-            if self.engine.attack_table().king_attacks(opp_king).test(square) {
+            if self.engine
+                .attack_table()
+                .king_attacks(opp_king)
+                .test(square)
+            {
                 board.set(opp_king);
             }
         }

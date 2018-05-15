@@ -5,11 +5,10 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use position::Position;
-use moves::Move;
-use types::{Color, Direction, Rank, PieceKind, Square};
 use bitboard::Bitboard;
-use attacks;
+use moves::Move;
+use position::Position;
+use types::{Color, Direction, PieceKind, Rank, Square};
 
 fn add_pawns(pos: &Position, moves: &mut Vec<Move>) {
     let color = pos.side_to_move();
@@ -40,7 +39,8 @@ fn add_pawns(pos: &Position, moves: &mut Vec<Move>) {
 
         // double-pawn pushes, for pawns still on their starting square
         if pawn.rank() == starting_rank {
-            let two_push_target = target.towards(pawn_direction)
+            let two_push_target = target
+                .towards(pawn_direction)
                 .expect("double-push from starting rank should stay on board");
             if !piece_map.test(two_push_target) && !piece_map.test(target) {
                 moves.push(Move::double_pawn_push(pawn, two_push_target));
@@ -65,10 +65,15 @@ fn add_pawns(pos: &Position, moves: &mut Vec<Move>) {
         // en-passant
         if let Some(ep_square) = pos.en_passant_square() {
             // would this be a normal legal attack for this pawn?
-            if pos.engine().attack_table().pawn_attacks(pawn, color).test(ep_square) {
+            if pos.engine()
+                .attack_table()
+                .pawn_attacks(pawn, color)
+                .test(ep_square)
+            {
                 // the attack square is directly behind the pawn that was pushed
-                let attack_sq =
-                    ep_square.towards(ep_dir).expect("en-passant piece square not on board");
+                let attack_sq = ep_square
+                    .towards(ep_dir)
+                    .expect("en-passant piece square not on board");
                 assert!(enemy_piece_map.test(attack_sq));
                 assert!(!piece_map.test(ep_square));
                 moves.push(Move::en_passant(pawn, ep_square));
@@ -93,8 +98,9 @@ fn add_knights(pos: &Position, moves: &mut Vec<Move>) {
 }
 
 fn add_sliding_pieces<F, B>(pos: &Position, moves: &mut Vec<Move>, atks: F, board: B)
-    where F: Fn(Square, Bitboard) -> Bitboard,
-          B: FnOnce(Color) -> Bitboard
+where
+    F: Fn(Square, Bitboard) -> Bitboard,
+    B: FnOnce(Color) -> Bitboard,
 {
     let color = pos.side_to_move();
     let enemy_piece_map = pos.color(color.toggle());
@@ -136,8 +142,9 @@ fn add_kings(pos: &Position, moves: &mut Vec<Move>) {
             let one = king.towards(Direction::East).unwrap();
             let two = one.towards(Direction::East).unwrap();
             if !piece_map.test(one) && !piece_map.test(two) {
-                if pos.squares_attacking(color.toggle(), one).empty() &&
-                   pos.squares_attacking(color.toggle(), two).empty() {
+                if pos.squares_attacking(color.toggle(), one).empty()
+                    && pos.squares_attacking(color.toggle(), two).empty()
+                {
                     moves.push(Move::kingside_castle(king, two));
                 }
             }
@@ -150,8 +157,9 @@ fn add_kings(pos: &Position, moves: &mut Vec<Move>) {
             // three can be checked, but it can't be occupied. this is because
             // the rook needs to move "across" three, but the king does not.
             if !piece_map.test(one) && !piece_map.test(two) && !piece_map.test(three) {
-                if pos.squares_attacking(color.toggle(), one).empty() &&
-                   pos.squares_attacking(color.toggle(), two).empty() {
+                if pos.squares_attacking(color.toggle(), one).empty()
+                    && pos.squares_attacking(color.toggle(), two).empty()
+                {
                     moves.push(Move::queenside_castle(king, two));
                 }
             }
@@ -162,17 +170,23 @@ fn add_kings(pos: &Position, moves: &mut Vec<Move>) {
 pub fn generate_moves(pos: &Position, moves: &mut Vec<Move>) {
     add_pawns(pos, moves);
     add_knights(pos, moves);
-    add_sliding_pieces(pos,
-                       moves,
-                       |s, b| pos.engine().attack_table().bishop_attacks(s, b),
-                       |c| pos.bishops(c));
-    add_sliding_pieces(pos,
-                       moves,
-                       |s, b| pos.engine().attack_table().rook_attacks(s, b),
-                       |c| pos.rooks(c));
-    add_sliding_pieces(pos,
-                       moves,
-                       |s, b| pos.engine().attack_table().queen_attacks(s, b),
-                       |c| pos.queens(c));
+    add_sliding_pieces(
+        pos,
+        moves,
+        |s, b| pos.engine().attack_table().bishop_attacks(s, b),
+        |c| pos.bishops(c),
+    );
+    add_sliding_pieces(
+        pos,
+        moves,
+        |s, b| pos.engine().attack_table().rook_attacks(s, b),
+        |c| pos.rooks(c),
+    );
+    add_sliding_pieces(
+        pos,
+        moves,
+        |s, b| pos.engine().attack_table().queen_attacks(s, b),
+        |c| pos.queens(c),
+    );
     add_kings(pos, moves);
 }

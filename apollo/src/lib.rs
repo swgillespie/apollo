@@ -19,8 +19,7 @@
 //!
 //! It is one component of the Apollo chess engine. Other components are
 //! responsible for searching for good moves and communicating with a chess UI.
-#![allow(unused_features)]
-#![feature(const_fn, test)]
+#![feature(test)]
 
 #[macro_use]
 extern crate bitflags;
@@ -30,17 +29,17 @@ extern crate rand;
 #[cfg(test)]
 extern crate test;
 
-mod engine;
-mod types;
-mod bitboard;
 mod attacks;
+mod bitboard;
+mod engine;
+mod movegen;
 mod moves;
 mod position;
-mod movegen;
+mod types;
 mod zobrist;
 
-pub use types::{Square, Rank, File, Color, Piece, PieceKind};
-pub use moves::Move;
-pub use position::{Position, FenParseError};
 pub use bitboard::{Bitboard, BitboardIterator};
 pub use engine::Engine;
+pub use moves::Move;
+pub use position::{FenParseError, Position};
+pub use types::{Color, File, Piece, PieceKind, Rank, Square};
