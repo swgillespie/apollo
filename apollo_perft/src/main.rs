@@ -15,14 +15,13 @@ extern crate serde_json;
 
 mod perft;
 
-use apollo::Position;
+use apollo::Engine;
 use std::time::Instant;
 use std::process;
 use std::fs::File;
 use clap::{Arg, App};
 
 fn main() {
-    apollo::initialize();
     let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(crate_version!())
         .author(crate_authors!())
@@ -53,7 +52,8 @@ fn main() {
         println!("warning, this is probably going to take a while...");
     }
 
-    let pos = match Position::from_fen(fen) {
+    let engine = Engine::new();
+    let pos = match engine.new_position_from_fen(fen) {
         Ok(pos) => pos,
         Err(_) => {
             println!("invalid FEN!");

@@ -51,7 +51,7 @@ pub struct Position<'e> {
 
 impl<'e> Position<'e> {
     /// Constructs a new, empty Position.
-    pub fn new(engine: &'e Engine) -> Position<'e> {
+    pub(crate) fn new(engine: &'e Engine) -> Position<'e> {
         Position {
             engine: engine,
             boards_by_piece: [Bitboard::none(); 12],
@@ -67,7 +67,7 @@ impl<'e> Position<'e> {
 
     /// Constructs a new position from a FEN representation of a board
     /// position.
-    pub fn from_fen<S: AsRef<str>>(
+    pub(crate) fn from_fen<S: AsRef<str>>(
         engine: &'e Engine,
         fen: S,
     ) -> Result<Position<'e>, FenParseError> {

@@ -6,19 +6,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 use attacks::AttackTable;
-use position::{Position, FenParseError};
+use position::{FenParseError, Position};
 use zobrist::ZobristHasher;
 
+/// The central Engine data structure, holding state useful to chess
+/// analyses.
 pub struct Engine {
     attack_table: Box<AttackTable>,
-    hasher: Box<ZobristHasher>
+    hasher: Box<ZobristHasher>,
 }
 
 impl Engine {
+    /// Creates a new Engine.
     pub fn new() -> Engine {
         Engine {
             attack_table: Box::new(AttackTable::new()),
-            hasher: Box::new(ZobristHasher::new())
+            hasher: Box::new(ZobristHasher::new()),
         }
     }
 
@@ -30,11 +33,16 @@ impl Engine {
         &self.hasher
     }
 
+    /// Creates a new, empty `Position`.
     pub fn new_position<'e>(&'e self) -> Position<'e> {
         Position::new(self)
     }
 
-    pub fn new_position_from_fen<'e, S: AsRef<str>>(&'e self, fen: S) -> Result<Position<'e>, FenParseError> {
+    /// Creates a new Position from the FEN representation of the position.
+    pub fn new_position_from_fen<'e, S: AsRef<str>>(
+        &'e self,
+        fen: S,
+    ) -> Result<Position<'e>, FenParseError> {
         Position::from_fen(self, fen)
     }
 }

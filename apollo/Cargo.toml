@@ -3,7 +3,7 @@ name = "apollo"
 version = "0.0.1"
 authors = ["Sean Gillespie <sean@swgillespie.me>"]
 license = "MIT/Apache-2.0"
-description = "Core of a chess engine."
+description = "A chess engine"
 repository = "https://github.com/swgillespie/apollo"
 keywords = ["chess"]
 

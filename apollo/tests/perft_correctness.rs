@@ -209,7 +209,6 @@ mod position_4 {
     }
 
     #[test]
-    #[ignore]
     fn perft_4() {
         let results = perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4);
         assert_eq!(422333, results.nodes);

@@ -37,6 +37,8 @@ mod moves;
 mod position;
 mod types;
 mod zobrist;
+mod search;
+mod uci;
 
 pub use bitboard::{Bitboard, BitboardIterator};
 pub use engine::Engine;
