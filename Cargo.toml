@@ -1,6 +1,6 @@
 [package]
-name = "apollo3"
-version = "0.1.0"
+name = "apollo"
+version = "0.3.0"
 authors = ["Sean Gillespie <sean@swgillespie.me>"]
 edition = "2018"
 

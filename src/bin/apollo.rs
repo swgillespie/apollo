@@ -14,10 +14,10 @@ use std::io;
 use std::process;
 use std::time::Instant;
 
-use apollo3::eval::ShannonEvaluator;
-use apollo3::search::Searcher;
-use apollo3::uci::UciServer;
-use apollo3::{perft, Position};
+use apollo::eval::ShannonEvaluator;
+use apollo::search::Searcher;
+use apollo::uci::UciServer;
+use apollo::{perft, Position};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 fn main() {

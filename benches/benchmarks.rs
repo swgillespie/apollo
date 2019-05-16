@@ -9,8 +9,8 @@
 #[macro_use]
 extern crate criterion;
 
-use apollo3::attacks;
-use apollo3::{Bitboard, MoveGenerator, MoveVec, Position, Square};
+use apollo::attacks;
+use apollo::{Bitboard, MoveGenerator, MoveVec, Position, Square};
 use criterion::black_box;
 use criterion::Criterion;
 
