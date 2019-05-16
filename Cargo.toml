@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "apollo",
-    "apollo_perft",
-]
