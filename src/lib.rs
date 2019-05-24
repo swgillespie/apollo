@@ -13,6 +13,8 @@ extern crate num_derive;
 extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 
 mod analysis;
 pub mod attacks;

@@ -5,6 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+use std::time::Duration;
+
 use crate::eval::{BoardEvaluator, Score};
 use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
@@ -17,60 +19,27 @@ pub struct SearchResult {
     pub score: Score,
 }
 
-pub struct Searcher<E> {
+pub trait Searcher {
+    fn search(
+        &mut self,
+        pos: &Position,
+        max_depth: u32,
+        time_budget: Option<Duration>,
+    ) -> SearchResult;
+}
+
+pub struct NaiveSearcher<E> {
     evaluator: E,
     nodes_searched: u64,
     moving_player: Color,
 }
 
-impl<E: BoardEvaluator> Searcher<E> {
-    pub fn new() -> Searcher<E> {
-        Searcher {
+impl<E: BoardEvaluator> NaiveSearcher<E> {
+    pub fn new() -> NaiveSearcher<E> {
+        NaiveSearcher {
             evaluator: Default::default(),
             nodes_searched: 0u64,
             moving_player: Color::White,
-        }
-    }
-
-    pub fn search(&mut self, pos: &Position, depth: u32) -> SearchResult {
-        self.nodes_searched = 0;
-        self.moving_player = pos.side_to_move();
-        let mut best_move = None;
-        let mut best_score = Score::Loss(0);
-
-        let gen = MoveGenerator::new();
-        let mut moves = MoveVec::default();
-        gen.generate_moves(pos, &mut moves);
-
-        let mut candidate_positions: Vec<(Move, Position)> = moves
-            .into_iter()
-            .filter(|&m| pos.is_legal_given_pseudolegal(m))
-            .map(|m| {
-                let mut cloned = pos.clone();
-                cloned.apply_move(m);
-                (m, cloned)
-            })
-            .collect();
-        candidate_positions.sort_by_cached_key(|(_, p)| self.evaluator.evaluate(p));
-
-        let mut alpha = Score::Loss(0);
-        let beta = Score::Win(0);
-        for (mov, pos) in candidate_positions {
-            let score = -self.alpha_beta(&pos, -beta, -alpha, depth - 1);
-            if score > alpha {
-                alpha = score;
-            }
-
-            if score > best_score || best_move.is_none() {
-                best_score = score;
-                best_move = Some(mov)
-            }
-        }
-
-        SearchResult {
-            best_move: best_move.unwrap_or(Move::null()),
-            score: best_score,
-            nodes_searched: self.nodes_searched,
         }
     }
 
@@ -127,6 +96,60 @@ impl<E: BoardEvaluator> Searcher<E> {
         match pos.side_to_move() {
             Color::White => value,
             Color::Black => -value,
+        }
+    }
+}
+
+impl<E: BoardEvaluator> Searcher for NaiveSearcher<E> {
+    fn search(
+        &mut self,
+        pos: &Position,
+        max_depth: u32,
+        time_budget: Option<Duration>,
+    ) -> SearchResult {
+        assert!(
+            time_budget.is_none(),
+            "NaiveSearcher does not support time budgets"
+        );
+
+        self.nodes_searched = 0;
+        self.moving_player = pos.side_to_move();
+        let mut best_move = None;
+        let mut best_score = Score::Loss(0);
+
+        let gen = MoveGenerator::new();
+        let mut moves = MoveVec::default();
+        gen.generate_moves(pos, &mut moves);
+
+        let mut candidate_positions: Vec<(Move, Position)> = moves
+            .into_iter()
+            .filter(|&m| pos.is_legal_given_pseudolegal(m))
+            .map(|m| {
+                let mut cloned = pos.clone();
+                cloned.apply_move(m);
+                (m, cloned)
+            })
+            .collect();
+        candidate_positions.sort_by_cached_key(|(_, p)| self.evaluator.evaluate(p));
+
+        let mut alpha = Score::Loss(0);
+        let beta = Score::Win(0);
+        for (mov, pos) in candidate_positions {
+            let score = -self.alpha_beta(&pos, -beta, -alpha, max_depth - 1);
+            if score > alpha {
+                alpha = score;
+            }
+
+            if score > best_score || best_move.is_none() {
+                best_score = score;
+                best_move = Some(mov)
+            }
+        }
+
+        SearchResult {
+            best_move: best_move.unwrap_or(Move::null()),
+            score: best_score,
+            nodes_searched: self.nodes_searched,
         }
     }
 }

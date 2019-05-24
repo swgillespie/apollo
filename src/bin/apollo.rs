@@ -15,12 +15,13 @@ use std::process;
 use std::time::Instant;
 
 use apollo::eval::ShannonEvaluator;
-use apollo::search::Searcher;
+use apollo::search::{IterativeDeepeningSearcher, NaiveSearcher, Searcher};
 use apollo::uci::UciServer;
 use apollo::{perft, Position};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 fn main() {
+    env_logger::init();
     let matches = App::new(crate_name!())
         .version(crate_version!())
         .author(crate_authors!())
@@ -125,8 +126,10 @@ fn run_evaluate(matches: &ArgMatches) -> ! {
     println!("{}", pos);
     println!();
 
-    let mut searcher: Searcher<ShannonEvaluator> = Searcher::new();
-    let result = searcher.search(&pos, depth);
+    let mut searcher: IterativeDeepeningSearcher<ShannonEvaluator> =
+        IterativeDeepeningSearcher::new();
+    // let mut searcher: NaiveSearcher<ShannonEvaluator> = NaiveSearcher::new();
+    let result = searcher.search(&pos, depth, None);
     println!("best move: {}", result.best_move);
     println!("    score: {}", result.score);
     println!("    nodes: {}", result.nodes_searched);

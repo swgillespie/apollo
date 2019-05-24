@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 use std::convert::TryFrom;
-use std::fmt;
+use std::fmt::{self, Write};
 
 use crate::attacks;
 use crate::bitboard::Bitboard;
@@ -935,6 +935,61 @@ impl Position {
 
         // 4. Else, it's quiet.
         return Some(Move::quiet(source, dest));
+    }
+
+    pub fn as_fen(&self) -> String {
+        let mut buf = String::new();
+        for &rank in RANKS.iter().rev() {
+            let mut empty_squares = 0;
+            for &file in &FILES {
+                let square = Square::of(rank, file);
+                if let Some(piece) = self.piece_at(square) {
+                    if empty_squares != 0 {
+                        write!(&mut buf, "{}", empty_squares).unwrap();
+                    }
+                    write!(&mut buf, "{}", piece).unwrap();
+                    empty_squares = 0;
+                } else {
+                    empty_squares += 1;
+                }
+            }
+
+            if empty_squares != 0 {
+                write!(&mut buf, "{}", empty_squares).unwrap();
+            }
+
+            if rank != Rank::One {
+                buf.push('/');
+            }
+        }
+
+        buf.push(' ');
+        match self.side_to_move() {
+            Color::White => buf.push('w'),
+            Color::Black => buf.push('b'),
+        }
+        buf.push(' ');
+        if self.can_castle_kingside(Color::White) {
+            buf.push('K');
+        }
+        if self.can_castle_queenside(Color::White) {
+            buf.push('Q');
+        }
+        if self.can_castle_kingside(Color::Black) {
+            buf.push('k');
+        }
+        if self.can_castle_queenside(Color::Black) {
+            buf.push('q');
+        }
+        buf.push(' ');
+        if let Some(ep_square) = self.en_passant_square() {
+            write!(&mut buf, "{}", ep_square).unwrap();
+        } else {
+            buf.push('-');
+        }
+        buf.push(' ');
+        write!(&mut buf, "{} {}", self.halfmove_clock(), self.fullmove_clock()).unwrap();
+        buf
     }
 }
 

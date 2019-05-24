@@ -6,6 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+mod iterative_deepening_searcher;
 mod searcher;
+mod transposition_table;
 
-pub use searcher::Searcher;
+pub use iterative_deepening_searcher::IterativeDeepeningSearcher;
+pub use searcher::{NaiveSearcher, SearchResult, Searcher};
+pub use transposition_table::{NodeKind, TableEntry, TableStats, TranspositionTable};

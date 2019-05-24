@@ -6,21 +6,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 use std::io::{self, BufRead, Write};
+use std::time::Duration;
 
 use crate::eval::{Score, ShannonEvaluator};
 use crate::position::Position;
-use crate::search::Searcher;
+use crate::search::{IterativeDeepeningSearcher, Searcher};
 
 pub struct UciServer {
     pos: Position,
-    searcher: Searcher<ShannonEvaluator>,
+    searcher: IterativeDeepeningSearcher<ShannonEvaluator>,
 }
 
 impl UciServer {
     pub fn new() -> UciServer {
         UciServer {
             pos: Position::new(),
-            searcher: Searcher::new(),
+            searcher: IterativeDeepeningSearcher::new(),
         }
     }
 
@@ -115,7 +116,9 @@ impl UciServer {
         _: &[&str],
     ) -> io::Result<()> {
         writeln!(l, "beginning search")?;
-        let result = self.searcher.search(&self.pos, 4);
+        let result = self
+            .searcher
+            .search(&self.pos, 10, Some(Duration::from_secs(20)));
         writeln!(l, "move: {} ({})", result.best_move, result.score)?;
         write!(w, "info depth 5 nodes {}", result.nodes_searched)?;
         match result.score {
