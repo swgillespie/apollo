@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export RUST_LOG=info
+export RUST_BACKTRACE=all
+apollo 2> /var/log/apollo3.log

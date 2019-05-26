@@ -19,7 +19,7 @@ pub struct IterativeDeepeningSearcher<E> {
     ttable: TranspositionTable,
 }
 
-impl<E: BoardEvaluator> IterativeDeepeningSearcher<E> {
+impl<E: Default> IterativeDeepeningSearcher<E> {
     pub fn new() -> IterativeDeepeningSearcher<E> {
         IterativeDeepeningSearcher {
             evaluator: Default::default(),
@@ -37,6 +37,12 @@ impl<E: BoardEvaluator> Searcher for IterativeDeepeningSearcher<E> {
     ) -> SearchResult {
         let mut search = IterativeSearch::new(self, max_depth, time_budget);
         search.search(pos)
+    }
+}
+
+impl<E: Default> Default for IterativeDeepeningSearcher<E> {
+    fn default() -> IterativeDeepeningSearcher<E> {
+        IterativeDeepeningSearcher::new()
     }
 }
 
@@ -92,7 +98,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
     }
 
     fn alpha_beta(&mut self, pos: &Position, mut alpha: Score, beta: Score, depth: u32) -> Score {
-        debug!("{}", pos.as_fen());
+        //debug!("{}", pos.as_fen());
         debug!("depth: {}", depth);
         debug!("alpha: {}", alpha);
         debug!("beta:  {}", beta);
@@ -195,6 +201,10 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
 
             if score > alpha {
                 improved_alpha = true;
+                debug!(
+                    "hash move {} improved PV, setting alpha = {}",
+                    hash_move, score
+                );
                 self.searcher
                     .ttable
                     .record_principal_variation(pos, hash_move, depth, score);
@@ -225,6 +235,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                 Score::Evaluated(0.0f32)
             };
 
+            //debug!("{} is checkmate or draw position", pos.as_fen());
             self.searcher
                 .ttable
                 .record_principal_variation(pos, Move::null(), depth, score);
@@ -250,6 +261,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         }
 
         if !improved_alpha {
+            //debug!("recording {} as all node", pos.as_fen());
             self.searcher.ttable.record_all(pos, depth, alpha);
         }
 
@@ -272,7 +284,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
 
             current_best_move = result.best_move;
             current_best_score = result.score;
-            self.print_pv(pos, depth);
+            info!("pv ({}): {:?}", current_best_score, self.get_pv(pos, depth));
         }
 
         SearchResult {
@@ -282,23 +294,23 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         }
     }
 
-    fn print_pv(&self, pos: &Position, depth: u32) {
+    fn get_pv(&self, pos: &Position, depth: u32) -> Vec<Move> {
+        let mut pv = vec![];
         let mut pv_clone = pos.clone();
-        print!("pv, depth {}:", depth);
         for _ in 0..depth {
             let best_move = self
                 .searcher
                 .ttable
                 .query(&pv_clone, |e| e.unwrap().best_move);
             if let Some(best_move) = best_move {
-                print!(" {}", best_move);
+                pv.push(best_move);
                 pv_clone.apply_move(best_move);
             } else {
-                println!();
-                return;
+                break;
             }
         }
-        println!();
+
+        pv
     }
 
     fn out_of_time(&self) -> bool {

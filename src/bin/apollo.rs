@@ -9,13 +9,11 @@
 #[macro_use]
 extern crate clap;
 
-use std::fs::File as IoFile;
-use std::io;
 use std::process;
 use std::time::Instant;
 
 use apollo::eval::ShannonEvaluator;
-use apollo::search::{IterativeDeepeningSearcher, NaiveSearcher, Searcher};
+use apollo::search::{IterativeDeepeningSearcher, Searcher};
 use apollo::uci::UciServer;
 use apollo::{perft, Position};
 use clap::{App, Arg, ArgMatches, SubCommand};
@@ -72,12 +70,9 @@ fn main() {
         run_evaluate(matches);
     }
 
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-
-    let log = IoFile::create("/var/log/apollo3.log").unwrap();
-    let svr = UciServer::new();
-    svr.run(stdin.lock(), stdout.lock(), log).unwrap()
+    let svr: UciServer<IterativeDeepeningSearcher<ShannonEvaluator>> = UciServer::new();
+    svr.run().unwrap()
+    //svr.run(stdin.lock(), stdout.lock(), log).unwrap()
 }
 
 fn run_perft(matches: &ArgMatches) -> ! {

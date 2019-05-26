@@ -21,6 +21,9 @@ env_logger = "0.6.1"
 [dev-dependencies]
 criterion = "0.2"
 
+[profile.release]
+debug-assertions = false
+
 [[bench]]
 name = "benchmarks"
 harness = false

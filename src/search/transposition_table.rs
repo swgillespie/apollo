@@ -96,6 +96,16 @@ impl TranspositionTable {
     }
 
     pub fn record_all(&self, pos: &Position, depth: u32, score: Score) {
+        if let Some(existing) = self.query_copy(pos) {
+            if let NodeKind::All(_) = existing.node {
+                if existing.depth >= depth {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+
         let key = pos.zobrist_hash();
         let entry = TableEntry {
             zobrist_key: key,
