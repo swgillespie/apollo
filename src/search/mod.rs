@@ -11,7 +11,7 @@ mod iterative_deepening_searcher;
 mod searcher;
 mod transposition_table;
 
+pub use data::{DataRecorder, CsvDataRecorder, NullDataRecorder, Record};
 pub use iterative_deepening_searcher::IterativeDeepeningSearcher;
-pub use searcher::{NaiveSearcher, SearchResult, Searcher};
+pub use searcher::{SearchResult, Searcher};
 pub use transposition_table::{NodeKind, TableEntry, TableStats, TranspositionTable};
-pub use data::{DataRecorder, NullDataRecorder, Record};

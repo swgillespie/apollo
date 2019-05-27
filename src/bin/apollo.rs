@@ -9,11 +9,12 @@
 #[macro_use]
 extern crate clap;
 
+use std::fs::File;
 use std::process;
 use std::time::Instant;
 
 use apollo::eval::ShannonEvaluator;
-use apollo::search::{IterativeDeepeningSearcher, Searcher};
+use apollo::search::{CsvDataRecorder, IterativeDeepeningSearcher, Searcher};
 use apollo::uci::UciServer;
 use apollo::{perft, Position};
 use clap::{App, Arg, ArgMatches, SubCommand};
@@ -121,10 +122,10 @@ fn run_evaluate(matches: &ArgMatches) -> ! {
     println!("{}", pos);
     println!();
 
+    let recorder = CsvDataRecorder::new(File::create("data.csv").unwrap());
     let mut searcher: IterativeDeepeningSearcher<ShannonEvaluator> =
         IterativeDeepeningSearcher::new();
-    // let mut searcher: NaiveSearcher<ShannonEvaluator> = NaiveSearcher::new();
-    let result = searcher.search(&pos, depth, None);
+    let result = searcher.search(&pos, depth, None, &recorder);
     println!("best move: {}", result.best_move);
     println!("    score: {}", result.score);
     println!("    nodes: {}", result.nodes_searched);

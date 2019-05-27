@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use crate::eval::Score;
 use crate::position::Position;
-use crate::search::Searcher;
+use crate::search::{NullDataRecorder, Searcher};
 
 macro_rules! uci_println {
     ($fmt:expr) => {
@@ -119,9 +119,12 @@ impl<S: Searcher + Default> UciServer<S> {
 
     fn handle_go(&mut self, _: &[&str]) {
         info!("beginning search, (depth 10, 20 second budget)");
-        let result = self
-            .search
-            .search(&self.pos, 10, Some(Duration::from_secs(20)));
+        let result = self.search.search(
+            &self.pos,
+            10,
+            Some(Duration::from_secs(20)),
+            &NullDataRecorder,
+        );
         info!("move: {} ({})", result.best_move, result.score);
 
         let mut out = String::new();

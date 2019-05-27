@@ -11,7 +11,7 @@ use crate::eval::{BoardEvaluator, Score};
 use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
 use crate::position::Position;
-use crate::search::{NodeKind, Record, SearchResult, Searcher, TranspositionTable};
+use crate::search::{DataRecorder, NodeKind, Record, SearchResult, Searcher, TranspositionTable};
 use crate::types::Color;
 
 pub struct IterativeDeepeningSearcher<E> {
@@ -34,9 +34,10 @@ impl<E: BoardEvaluator> Searcher for IterativeDeepeningSearcher<E> {
         pos: &Position,
         max_depth: u32,
         time_budget: Option<Duration>,
+        recorder: &dyn DataRecorder,
     ) -> SearchResult {
         let mut search = IterativeSearch::new(self, max_depth, time_budget);
-        search.search(pos)
+        search.search(pos, recorder)
     }
 }
 
@@ -71,7 +72,14 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
     }
 
     /// Does a toplevel search of a given depth.
-    fn search_depth(&mut self, pos: &Position, depth: u32) -> SearchResult {
+    fn search_depth(
+        &mut self,
+        pos: &Position,
+        depth: u32,
+        recorder: &dyn DataRecorder,
+    ) -> SearchResult {
+        self.stats = Default::default();
+        self.stats.depth = depth;
         let alpha = Score::Loss(0);
         let beta = Score::Win(0);
         let score = self.alpha_beta(pos, alpha, beta, depth);
@@ -82,6 +90,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                 .expect("search_depth thinks that root node is an all-node")
         });
 
+        recorder.record(pos, &self.stats);
         SearchResult {
             best_move: best_move,
             score: score,
@@ -126,6 +135,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             //       we won't get a hash move out of it.
 
             debug!("tt hit! {:?}, search depth {}", entry, depth);
+            self.stats.tt_absolute_hit += 1;
             let hash_move = entry.best_move;
             if entry.depth >= depth && (hash_move.is_none() || pos.is_legal(hash_move.unwrap())) {
                 match entry.node {
@@ -134,6 +144,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                         // best case scenario; we know exactly what the score is. We don't have to search this subtree
                         // at all.
                         debug!("exiting with score {} due to TT PV hit", score.step());
+                        self.stats.tt_absolute_hit_pv += 1;
                         return score.step();
                     }
                     NodeKind::Cut(score) => {
@@ -147,12 +158,14 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                                 "exiting with score {} due to TT hit beta cutoff",
                                 beta.step()
                             );
+                            self.stats.tt_absolute_hit_cut += 1;
                             return beta.step();
                         }
 
                         // If the lower bound is greater than alpha, bump up alpha to match.
                         if score >= alpha {
                             debug!("bumping alpha up to {} due to TT hit", score);
+                            self.stats.tt_absolute_hit_cut_improved_alpha += 1;
                             alpha = score;
                         }
 
@@ -169,6 +182,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                                 "exiting with score {} due to TT hit alpha cutoff",
                                 alpha.step()
                             );
+                            self.stats.tt_absolute_hit_all += 1;
                             return alpha.step();
                         }
 
@@ -190,6 +204,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         if let Some(hash_move) = hash_move {
             debug!("inspecting hash move {} for cutoffs", hash_move);
             debug_assert!(pos.is_legal(hash_move));
+            self.stats.hash_move_node += 1;
             let mut hash_pos = pos.clone();
             hash_pos.apply_move(hash_move);
             let score = -self.alpha_beta(&hash_pos, -beta, -alpha, depth - 1);
@@ -197,6 +212,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                 self.searcher
                     .ttable
                     .record_cut(pos, hash_move, depth, score);
+                self.stats.hash_move_beta_cutoff += 1;
                 return beta.step();
             }
 
@@ -206,6 +222,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                     "hash move {} improved PV, setting alpha = {}",
                     hash_move, score
                 );
+                self.stats.hash_move_improved_alpha += 1;
                 self.searcher
                     .ttable
                     .record_principal_variation(pos, hash_move, depth, score);
@@ -240,6 +257,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             self.searcher
                 .ttable
                 .record_principal_variation(pos, Move::null(), depth, score);
+            self.stats.pv_nodes += 1;
             return score.step();
         }
 
@@ -249,6 +267,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             let score = -self.alpha_beta(&child, -beta, -alpha, depth - 1);
             if score >= beta {
                 self.searcher.ttable.record_cut(pos, mov, depth, score);
+                self.stats.cut_nodes += 1;
                 return beta.step();
             }
 
@@ -263,18 +282,21 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
 
         if !improved_alpha {
             //debug!("recording {} as all node", pos.as_fen());
+            self.stats.all_nodes += 1;
             self.searcher.ttable.record_all(pos, depth, alpha);
+        } else {
+            self.stats.pv_nodes += 1;
         }
 
         alpha.step()
     }
 
-    fn search(&mut self, pos: &Position) -> SearchResult {
+    fn search(&mut self, pos: &Position, recorder: &dyn DataRecorder) -> SearchResult {
         let mut current_best_move = Move::null();
         let mut current_best_score = Score::Loss(0);
         for depth in 1..=self.max_depth {
             debug!("beginning search of depth {}", depth);
-            let result = self.search_depth(pos, depth);
+            let result = self.search_depth(pos, depth, recorder);
             if self.out_of_time() {
                 return SearchResult {
                     best_move: current_best_move,
