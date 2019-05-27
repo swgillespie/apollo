@@ -11,7 +11,7 @@ use crate::eval::{BoardEvaluator, Score};
 use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
 use crate::position::Position;
-use crate::search::{NodeKind, SearchResult, Searcher, TranspositionTable};
+use crate::search::{NodeKind, Record, SearchResult, Searcher, TranspositionTable};
 use crate::types::Color;
 
 pub struct IterativeDeepeningSearcher<E> {
@@ -51,7 +51,8 @@ struct IterativeSearch<'a, E> {
     max_depth: u32,
     time_budget: Option<Duration>,
     start_time: Instant,
-    nodes_searched: u64,
+
+    stats: Record,
 }
 
 impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
@@ -65,7 +66,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             max_depth: max_depth,
             time_budget: budget,
             start_time: Instant::now(),
-            nodes_searched: 0,
+            stats: Default::default(),
         }
     }
 
@@ -84,12 +85,12 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         SearchResult {
             best_move: best_move,
             score: score,
-            nodes_searched: self.nodes_searched,
+            nodes_searched: self.stats.nodes,
         }
     }
 
     fn quiesce(&mut self, pos: &Position, _alpha: Score, _beta: Score) -> Score {
-        self.nodes_searched += 1;
+        self.stats.nodes += 1;
         let value = self.searcher.evaluator.evaluate(pos);
         match pos.side_to_move() {
             Color::White => value,
@@ -278,7 +279,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                 return SearchResult {
                     best_move: current_best_move,
                     score: current_best_score,
-                    nodes_searched: self.nodes_searched,
+                    nodes_searched: self.stats.nodes,
                 };
             }
 
@@ -290,7 +291,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         SearchResult {
             best_move: current_best_move,
             score: current_best_score,
-            nodes_searched: self.nodes_searched,
+            nodes_searched: self.stats.nodes,
         }
     }
 
@@ -301,7 +302,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             let best_move = self
                 .searcher
                 .ttable
-                .query(&pv_clone, |e| e.unwrap().best_move);
+                .query(&pv_clone, |e| e.and_then(|e| e.best_move));
             if let Some(best_move) = best_move {
                 pv.push(best_move);
                 pv_clone.apply_move(best_move);

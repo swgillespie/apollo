@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+mod data;
 mod iterative_deepening_searcher;
 mod searcher;
 mod transposition_table;
@@ -13,3 +14,4 @@ mod transposition_table;
 pub use iterative_deepening_searcher::IterativeDeepeningSearcher;
 pub use searcher::{NaiveSearcher, SearchResult, Searcher};
 pub use transposition_table::{NodeKind, TableEntry, TableStats, TranspositionTable};
+pub use data::{DataRecorder, NullDataRecorder, Record};
