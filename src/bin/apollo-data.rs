@@ -19,7 +19,7 @@ use apollo::Position;
 
 struct AnalysisRecord {
     fen: String,
-    records: Vec<Record>
+    records: Vec<Record>,
 }
 
 fn main() {
@@ -28,10 +28,12 @@ fn main() {
         .version(crate_version!())
         .author(crate_authors!())
         .about("Data analysis tool for apollo")
-        .arg(Arg::with_name("FILE")
-            .help("CSV file to load for analysis")
-            .required(true)
-            .index(1))
+        .arg(
+            Arg::with_name("FILE")
+                .help("CSV file to load for analysis")
+                .required(true)
+                .index(1),
+        )
         .get_matches();
 
     let file = File::open(matches.value_of("FILE").unwrap()).unwrap();
@@ -50,7 +52,10 @@ fn read_file(file: &File) -> AnalysisRecord {
         records.push(record);
     }
 
-    AnalysisRecord { fen: records[0].fen.clone(), records }
+    AnalysisRecord {
+        fen: records[0].fen.clone(),
+        records,
+    }
 }
 
 fn print_records(rec: &AnalysisRecord) {
@@ -60,7 +65,10 @@ fn print_records(rec: &AnalysisRecord) {
         println!("depth: {}", record.depth);
         println!("nodes: {}", record.nodes);
         if record.depth > 1 {
-            println!("effective branching factor: {}", record.nodes as f64 / prev_nodes as f64);
+            println!(
+                "effective branching factor: {}",
+                record.nodes as f64 / prev_nodes as f64
+            );
         }
 
         println!();
@@ -69,6 +77,9 @@ fn print_records(rec: &AnalysisRecord) {
         println!("cut nodes: {}", record.cut_nodes);
         println!();
         println!("tt absolute hits: {}", record.tt_absolute_hit);
+        println!("      hash moves: {}", record.hash_move_node);
+        println!("hash move cutoff: {}", record.hash_move_beta_cutoff);
+        println!(" hash move alpha: {}", record.hash_move_improved_alpha);
         prev_nodes = record.nodes;
     }
 }

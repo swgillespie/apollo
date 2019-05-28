@@ -122,7 +122,7 @@ impl<S: Searcher + Default> UciServer<S> {
         let result = self.search.search(
             &self.pos,
             10,
-            Some(Duration::from_secs(20)),
+            Some(Duration::from_secs(1)),
             &NullDataRecorder,
         );
         info!("move: {} ({})", result.best_move, result.score);

@@ -192,7 +192,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
 
                 hash_move
             } else {
-                None
+                hash_move
             }
         } else {
             None
