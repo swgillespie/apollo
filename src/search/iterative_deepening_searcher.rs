@@ -107,16 +107,13 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         }
     }
 
-    fn alpha_beta(&mut self, pos: &Position, mut alpha: Score, beta: Score, depth: u32) -> Score {
-        //debug!("{}", pos.as_fen());
-        debug!("depth: {}", depth);
-        debug!("alpha: {}", alpha);
-        debug!("beta:  {}", beta);
-        if depth == 0 {
-            debug!("quiescing due to depth 0");
-            return self.quiesce(pos, alpha, beta);
-        }
-
+    fn consider_transposition(
+        &mut self,
+        pos: &Position,
+        alpha: &mut Score,
+        beta: Score,
+        depth: u32,
+    ) -> (Option<Move>, Option<Score>) {
         // The alpha-beta function in this searcher is designed to exploit the transposition table to take the best
         // known path through the game tree. The transposition table serves two purposes:
         //   1. If the t-table records that we've already done a really deep search for a particular position, we can
@@ -145,7 +142,7 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                         // at all.
                         debug!("exiting with score {} due to TT PV hit", score.step());
                         self.stats.tt_absolute_hit_pv += 1;
-                        return score.step();
+                        return (hash_move, Some(score.step()));
                     }
                     NodeKind::Cut(score) => {
                         // The last time we searched at this depth or greater, this move caused a beta cutoff. The score
@@ -159,14 +156,14 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                                 beta.step()
                             );
                             self.stats.tt_absolute_hit_cut += 1;
-                            return beta.step();
+                            return (hash_move, Some(beta.step()));
                         }
 
                         // If the lower bound is greater than alpha, bump up alpha to match.
-                        if score >= alpha {
+                        if score >= *alpha {
                             debug!("bumping alpha up to {} due to TT hit", score);
                             self.stats.tt_absolute_hit_cut_improved_alpha += 1;
-                            alpha = score;
+                            *alpha = score;
                         }
 
                         // Otherwise, we should search the hash move first - it'll probably cause a beta cutoff.
@@ -177,13 +174,13 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
                         //
                         // If the upper bound is worse than alpha, we're not going to find anything better if we search
                         // here.
-                        if score <= alpha {
+                        if score <= *alpha {
                             debug!(
                                 "exiting with score {} due to TT hit alpha cutoff",
                                 alpha.step()
                             );
                             self.stats.tt_absolute_hit_all += 1;
-                            return alpha.step();
+                            return (hash_move, Some(alpha.step()));
                         }
 
                         // Otherwise, we'll need to search everything, starting at the hash move.
@@ -198,6 +195,35 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
             None
         };
 
+        (hash_move, None)
+    }
+
+    fn alpha_beta(&mut self, pos: &Position, mut alpha: Score, beta: Score, depth: u32) -> Score {
+        //debug!("{}", pos.as_fen());
+        debug!("depth: {}", depth);
+        debug!("alpha: {}", alpha);
+        debug!("beta:  {}", beta);
+        if depth == 0 {
+            debug!("quiescing due to depth 0");
+            return self.quiesce(pos, alpha, beta);
+        }
+
+        // Consult the transposition table. Have we seen this position before and, if so, does it produce a cutoff?
+        // If so, there's no need to continue processing this position.
+        let (mut hash_move, cutoff_score) =
+            self.consider_transposition(pos, &mut alpha, beta, depth);
+        if let Some(cutoff) = cutoff_score {
+            return cutoff;
+        }
+
+        // Even if we didn't get a cutoff from the transposition table, we can at least begin the search with
+        // the hash move.
+        //
+        // If we received a hash move, it might not be legal (from a hash collision). Apply a legality test
+        // before proceeding.
+        hash_move = hash_move.and_then(|mov| if pos.is_legal(mov) { Some(mov) } else { None });
+
+        // Keep track if any move improved alpha. If so, this is a PV node.
         let mut improved_alpha = false;
 
         // Before generating moves, if there is a hash move, try it and see if it fails high.
@@ -344,5 +370,23 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         } else {
             false
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::eval::ShannonEvaluator;
+    use crate::position::Position;
+    use crate::search::{NullDataRecorder, Searcher};
+
+    use super::IterativeDeepeningSearcher;
+
+    #[test]
+    // Test to ensure that we don't regress our alpha-beta prune too badly.
+    fn opening_position_prune() {
+        let pos = Position::from_start_position();
+        let mut search: IterativeDeepeningSearcher<ShannonEvaluator> = Default::default();
+        let result = search.search(&pos, 2, None, &NullDataRecorder);
+        assert!(result.nodes_searched <= 80);
     }
 }
