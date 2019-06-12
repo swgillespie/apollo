@@ -17,4 +17,7 @@ test:
 clean:
 	rm -rf build
 
+docker:
+	docker build -t apollo:latest .
+
 all: engine server

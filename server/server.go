@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -94,7 +95,7 @@ func (s *Server) challengeLoop() {
 		//
 		// It is the responsibility of HandleGameStart to release the semaphore
 		// when a game completes.
-		s.gameSemaphore.Acquire(ctx, 1)
+		// s.gameSemaphore.Acquire(ctx, 1)
 
 		log.WithField("id", challenge.ID).Info("accepting challenge")
 		if err := s.client.Challenges.AcceptChallenge(ctx, challenge.ID); err != nil {
@@ -105,7 +106,7 @@ func (s *Server) challengeLoop() {
 }
 
 func (s *Server) HandleGameStart(ctx context.Context, gameStart blitz.GameStart) {
-	defer s.gameSemaphore.Release(1)
+	// defer s.gameSemaphore.Release(1)
 	log.WithField("id", gameStart.ID).Info("beginning game")
 	if err := s.playGame(ctx, gameStart); err != nil {
 		log.WithError(err).Error("fatal error while playing game")
@@ -134,7 +135,7 @@ func (s *Server) playGame(ctx context.Context, gameStart blitz.GameStart) error 
 	}
 
 	// Be friendly?
-	if err := s.client.Bot.WriteChat(ctx, gameStart.ID, "player", "Good Luck, Have Fun!"); err != nil {
+	if err := s.client.Bot.WriteChat(ctx, gameStart.ID, "player", "Good Luck, Have Fun! Check me out on GitHub at https://github.com/swgillespie/apollo"); err != nil {
 		log.WithError(err).Warning("failed to send friendly chat message")
 	}
 
@@ -221,7 +222,14 @@ func engineEvaluate(client *UCIClient, state blitz.GameState) (string, error) {
 func loadAndInitializeApollo() (*UCIClient, error) {
 	// Loading up Apollo entails launching apollo as a subprocess, hooking up our stdin and
 	// stdout accordingly, and then performing the base UCI handshake.
-	transport, err := NewProgramTransport("apollo")
+	//
+	// If there's an apollo on the path, use that, otherwise use an adjacent apollo.
+	apolloFromPath, err := exec.LookPath("apollo")
+	if err != nil {
+		apolloFromPath = "./apollo"
+	}
+
+	transport, err := NewProgramTransport(apolloFromPath)
 	if err != nil {
 		return nil, err
 	}
