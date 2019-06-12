@@ -3,3 +3,5 @@ target/
 .vscode/
 venv/
 rls/
+build/
+misc/
