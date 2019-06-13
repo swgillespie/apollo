@@ -12,7 +12,6 @@ RUN curl https://sh.rustup.rs > sh.rustup.rs \
 
 ADD src src
 ADD benches benches
-ADD Cargo.lock Cargo.lock
 ADD Cargo.toml Cargo.toml
 ADD Makefile Makefile
 
