@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -145,7 +146,12 @@ func (c *Client) post(ctx context.Context, endpoint string, args map[string]stri
 	decoder := json.NewDecoder(resp.Body)
 	if resp.StatusCode >= 400 {
 		if resp.Header.Get("Content-Type") != "application/json" {
-			return errors.Errorf("[%d] lichess responded with failure", resp.StatusCode)
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Errorf("[%d] lichess responded with failure", resp.StatusCode)
+			}
+
+			return errors.Errorf("[%d] %s", resp.StatusCode, body)
 		}
 
 		var errResponse lichessWireError

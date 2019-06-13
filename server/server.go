@@ -57,9 +57,11 @@ func (s *Server) Run() error {
 	for event := range events {
 		switch e := event.(type) {
 		case blitz.Challenge:
-			go s.HandleChallenge(ctx, e)
+			if err := s.HandleChallenge(ctx, e); err != nil {
+				log.WithError(err).Error("failed to accept challenge")
+			}
 		case blitz.GameStart:
-			go s.HandleGameStart(ctx, e)
+			s.HandleGameStart(ctx, e)
 		}
 	}
 
@@ -159,6 +161,16 @@ func (s *Server) playGame(ctx context.Context, gameStart blitz.GameStart) error 
 			log.Info("received GameFull event")
 			ourTurn = apolloIsWhite(e)
 			log.WithField("isWhite", strconv.FormatBool(ourTurn)).Info("determining which side apollo play on")
+			log.WithField("moves", e.State.Moves).Debug("incoming moves")
+
+			// Sometimes, if our opponent is VERY fast, the first GameFull contains the first move
+			// that our opponent did. If it's not our turn (i.e. we're black), it may be the case
+			// that our opponent has already played a move.
+			if e.State.Moves != "" {
+				log.Info("our opponent was super fast and played a move already, it is our turn despite being black")
+				ourTurn = !ourTurn
+			}
+
 			if !ourTurn {
 				log.Info("skipping state and not playing, not our turn")
 				ourTurn = !ourTurn
@@ -173,15 +185,15 @@ func (s *Server) playGame(ctx context.Context, gameStart blitz.GameStart) error 
 			bestmove = move
 		case blitz.GameState:
 			log.Info("received GameState event")
-			if !ourTurn {
-				log.Info("skipping state and not playing, not our turn")
-				ourTurn = !ourTurn
-				continue
-			}
-
 			if nextIsOurOwnMove {
 				log.Info("skipping state and not playing, this is our own move")
 				nextIsOurOwnMove = !nextIsOurOwnMove
+				continue
+			}
+
+			if !ourTurn {
+				log.Info("skipping state and not playing, not our turn")
+				ourTurn = !ourTurn
 				continue
 			}
 
