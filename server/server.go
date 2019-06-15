@@ -92,12 +92,13 @@ func (s *Server) challengeLoop() {
 	ctx := context.Background()
 	log.Info("challenge loop starting")
 	for challenge := range s.challenges {
-		// We only want to play a few games at a time, governed by gameSemaphore.
-		// Acquire it here before accepting the challenge.
-		//
-		// It is the responsibility of HandleGameStart to release the semaphore
-		// when a game completes.
-		// s.gameSemaphore.Acquire(ctx, 1)
+		if !apolloPlaysVariant(challenge.Variant) {
+			log.WithField("variant", challenge.Variant.Key).Info("declining challenge, apollo does not play this variant")
+			if err := s.client.Challenges.DeclineChallenge(ctx, challenge.ID); err != nil {
+				log.WithError(err).Info("failed to decline challenge")
+			}
+			continue
+		}
 
 		log.WithField("id", challenge.ID).Info("accepting challenge")
 		if err := s.client.Challenges.AcceptChallenge(ctx, challenge.ID); err != nil {
@@ -252,4 +253,15 @@ func loadAndInitializeApollo() (*UCIClient, error) {
 // apolloIsWhite returns true if Apollo is the white player in this game, false otherwise.
 func apolloIsWhite(fullGame blitz.GameFull) bool {
 	return fullGame.White.ID == "apollo_bot"
+}
+
+// apolloPlaysVariant returns true if Apollo can play the requested chess variant. Lichess supports a bunch of variants
+// that Apollo doesn't know how to play.
+func apolloPlaysVariant(variant blitz.Variant) bool {
+	switch variant.Key {
+	case "standard", "ultraBullet", "bullet", "blitz", "rapid", "classical", "correspondence":
+		return true
+	default:
+		return false
+	}
 }
