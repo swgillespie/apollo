@@ -44,7 +44,7 @@ func TestUCIHandshake(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -69,7 +69,7 @@ func TestIsReady(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -93,7 +93,7 @@ func TestUciNewgame(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -117,7 +117,7 @@ func TestPosition(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -141,7 +141,7 @@ func TestPositionMoves(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -167,7 +167,7 @@ func TestGo(t *testing.T) {
 		},
 	}
 
-	client, err := NewUCIClient(trans)
+	client, err := NewClient(trans)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
