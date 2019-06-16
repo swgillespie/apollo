@@ -1,4 +1,4 @@
-module github.com/swgillespie/apollo/server
+module github.com/swgillespie/apollo/apollod
 
 require (
 	github.com/pkg/errors v0.8.1

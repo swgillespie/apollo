@@ -1,4 +1,4 @@
-package main
+package uci
 
 import (
 	"bufio"
@@ -93,20 +93,20 @@ func NewProgramTransport(programPath string) (Transport, error) {
 	return trans, nil
 }
 
-// UCIClient is a wrapper over an input and output stream that speaks the UCI protocol.
+// Client is a wrapper over an input and output stream that speaks the UCI protocol.
 // The intention is to use UCI client alongside a UCI-compliant server to instruct the server to search for moves and
 // otherwise play the game of chess.
 //
 // See http://wbec-ridderkerk.nl/html/UCIProtocol.html for details on the protocol itself.
-type UCIClient struct {
+type Client struct {
 	transport Transport
 
 	name   string
 	author string
 }
 
-func NewUCIClient(transport Transport) (*UCIClient, error) {
-	client := &UCIClient{
+func NewClient(transport Transport) (*Client, error) {
+	client := &Client{
 		transport: transport,
 		name:      "",
 		author:    "",
@@ -119,10 +119,10 @@ func NewUCIClient(transport Transport) (*UCIClient, error) {
 	return client, nil
 }
 
-func (u *UCIClient) Name() string   { return u.name }
-func (u *UCIClient) Author() string { return u.author }
+func (u *Client) Name() string   { return u.name }
+func (u *Client) Author() string { return u.author }
 
-func (u *UCIClient) uci() error {
+func (u *Client) uci() error {
 	if err := u.transport.Send("uci"); err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (u *UCIClient) uci() error {
 	}
 }
 
-func (u *UCIClient) IsReady() error {
+func (u *Client) IsReady() error {
 	if err := u.transport.Send("isready"); err != nil {
 		return err
 	}
@@ -171,11 +171,11 @@ func (u *UCIClient) IsReady() error {
 	return nil
 }
 
-func (u *UCIClient) UCINewGame() error {
+func (u *Client) UCINewGame() error {
 	return u.transport.Send("ucinewgame")
 }
 
-func (u *UCIClient) Position(position string, moves []string) error {
+func (u *Client) Position(position string, moves []string) error {
 	var command string
 	if len(moves) > 0 {
 		command = fmt.Sprintf("position %s moves %s", position, strings.Join(moves, " "))
@@ -186,7 +186,7 @@ func (u *UCIClient) Position(position string, moves []string) error {
 	return u.transport.Send(command)
 }
 
-func (u *UCIClient) Go(wtime, btime, winc, binc int) (string, error) {
+func (u *Client) Go(wtime, btime, winc, binc int) (string, error) {
 	command := fmt.Sprintf("go wtime %d winc %d btime %d binc %d", wtime, winc, btime, binc)
 	if err := u.transport.Send(command); err != nil {
 		return "", err
@@ -210,14 +210,14 @@ func (u *UCIClient) Go(wtime, btime, winc, binc int) (string, error) {
 	}
 }
 
-func (u *UCIClient) Stop() error {
+func (u *Client) Stop() error {
 	return u.transport.Send("stop")
 }
 
-func (u *UCIClient) Quit() error {
+func (u *Client) Quit() error {
 	return u.transport.Send("quit")
 }
 
-func (u *UCIClient) Close() error {
+func (u *Client) Close() error {
 	return u.transport.Close()
 }

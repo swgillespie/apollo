@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -10,7 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/swgillespie/apollo/server/blitz"
+	"github.com/swgillespie/apollo/apollod/pkg/blitz"
+	"github.com/swgillespie/apollo/apollod/pkg/uci"
 )
 
 const (
@@ -219,7 +220,7 @@ func (s *Server) playGame(ctx context.Context, gameStart blitz.GameStart) error 
 	return nil
 }
 
-func engineEvaluate(client *UCIClient, state blitz.GameState) (string, error) {
+func engineEvaluate(client *uci.Client, state blitz.GameState) (string, error) {
 	moves := strings.Split(state.Moves, " ")
 	if err := client.Position("startpos", moves); err != nil {
 		return "", err
@@ -232,7 +233,7 @@ func engineEvaluate(client *UCIClient, state blitz.GameState) (string, error) {
 	return bestmove, nil
 }
 
-func loadAndInitializeApollo() (*UCIClient, error) {
+func loadAndInitializeApollo() (*uci.Client, error) {
 	// Loading up Apollo entails launching apollo as a subprocess, hooking up our stdin and
 	// stdout accordingly, and then performing the base UCI handshake.
 	//
@@ -242,12 +243,12 @@ func loadAndInitializeApollo() (*UCIClient, error) {
 		apolloFromPath = "./apollo"
 	}
 
-	transport, err := NewProgramTransport(apolloFromPath)
+	transport, err := uci.NewProgramTransport(apolloFromPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewUCIClient(transport)
+	return uci.NewClient(transport)
 }
 
 // apolloIsWhite returns true if Apollo is the white player in this game, false otherwise.

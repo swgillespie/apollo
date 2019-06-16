@@ -14,7 +14,7 @@ use std::process;
 use std::time::Instant;
 
 use apollo::eval::ShannonEvaluator;
-use apollo::search::{CsvDataRecorder, IterativeDeepeningSearcher, Searcher};
+use apollo::search::{CsvDataRecorder, Searcher};
 use apollo::uci::UciServer;
 use apollo::{perft, Position};
 use clap::{App, Arg, ArgMatches, SubCommand};
@@ -71,9 +71,8 @@ fn main() {
         run_evaluate(matches);
     }
 
-    let svr: UciServer<IterativeDeepeningSearcher<ShannonEvaluator>> = UciServer::new();
+    let svr = UciServer::new();
     svr.run().unwrap()
-    //svr.run(stdin.lock(), stdout.lock(), log).unwrap()
 }
 
 fn run_perft(matches: &ArgMatches) -> ! {
@@ -123,8 +122,7 @@ fn run_evaluate(matches: &ArgMatches) -> ! {
     println!();
 
     let recorder = CsvDataRecorder::new(File::create("data.csv").unwrap());
-    let mut searcher: IterativeDeepeningSearcher<ShannonEvaluator> =
-        IterativeDeepeningSearcher::new();
+    let mut searcher: Searcher<ShannonEvaluator> = Searcher::new();
     let result = searcher.search(&pos, depth, None, &recorder);
     println!("best move: {}", result.best_move);
     println!("    score: {}", result.score);

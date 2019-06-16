@@ -19,7 +19,7 @@ RUN . $HOME/.cargo/env \
     && cargo build --target x86_64-unknown-linux-musl --release --target-dir build/ \
     && cp ./build/x86_64-unknown-linux-musl/release/apollo ./build/apollo
 
-ADD server server
-RUN cd server && go build -o ../build/apollo-server .
+ADD apollod apollod
+RUN cd apollod && go build -o ../build/apollod .
 WORKDIR /go/build
-CMD ["./apollo-server"]
+CMD ["./apollod"]

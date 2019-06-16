@@ -1,9 +1,11 @@
-package main // import "github.com/swgillespie/apollo/server"
+package main // import "github.com/swgillespie/apollo/apollod"
 
 import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/swgillespie/apollo/apollod/pkg/server"
 )
 
 func main() {
@@ -13,12 +15,12 @@ func main() {
 		log.Fatalln("failed to read LICHESS_TOKEN")
 	}
 
-	server, err := NewServer(lichessToken)
+	svr, err := server.NewServer(lichessToken)
 	if err != nil {
 		log.WithError(err).Fatalln("failed to assume lichess account role")
 	}
 
-	if err = server.Run(); err != nil {
+	if err = svr.Run(); err != nil {
 		log.WithError(err).Fatalln("failed to launch server")
 	}
 }

@@ -8,7 +8,7 @@ engine: build
 	cargo build --release --target-dir build/
 
 server: build
-	cd server && go build -o ../build/apollo-server .
+	cd apollod && go build -o ../build/apollod .
 
 test:
 	cargo test

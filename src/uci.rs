@@ -10,6 +10,7 @@ use std::io::{self, BufRead};
 use std::time::Duration;
 
 use crate::eval::Score;
+use crate::eval::ShannonEvaluator;
 use crate::position::Position;
 use crate::search::{NullDataRecorder, Searcher};
 
@@ -28,13 +29,13 @@ macro_rules! uci_println {
     };
 }
 
-pub struct UciServer<S: Searcher> {
+pub struct UciServer {
     pos: Position,
-    search: S,
+    search: Searcher<ShannonEvaluator>,
 }
 
-impl<S: Searcher + Default> UciServer<S> {
-    pub fn new() -> UciServer<S> {
+impl UciServer {
+    pub fn new() -> UciServer {
         UciServer {
             pos: Position::new(),
             search: Default::default(),
@@ -139,8 +140,8 @@ impl<S: Searcher + Default> UciServer<S> {
     }
 }
 
-impl<S: Searcher + Default> Default for UciServer<S> {
-    fn default() -> UciServer<S> {
+impl Default for UciServer {
+    fn default() -> UciServer {
         UciServer::new()
     }
 }
