@@ -1,15 +1,37 @@
 package main // import "github.com/swgillespie/apollo/apollod"
 
 import (
+	"context"
+	"flag"
+	"fmt"
 	"os"
+	"runtime"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/swgillespie/apollo/apollod/pkg/selfplay"
 	"github.com/swgillespie/apollo/apollod/pkg/server"
 )
 
+var doSelfplay = flag.Bool("selfplay", false, "Run in selfplay mode")
+var baselineEngine = flag.String("baseline", "", "Path to baseline selfplay engine")
+var candidateEngine = flag.String("candidate", "", "Path to candidate selfplay engine")
+var numGames = flag.Int("numGames", 40, "Number of games to play")
+var parallelGames = flag.Int("parallel", runtime.NumCPU(), "Number of games to play in parallel")
+var debug = flag.Bool("debug", false, "Enable debug logging")
+
 func main() {
+	flag.Parse()
 	log.SetLevel(log.InfoLevel)
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	if *doSelfplay {
+		runSelfplay()
+		return
+	}
+
 	lichessToken := os.Getenv("LICHESS_TOKEN")
 	if lichessToken == "" {
 		log.Fatalln("failed to read LICHESS_TOKEN")
@@ -25,46 +47,29 @@ func main() {
 	}
 }
 
-/*
-func testUci() {
-	log.Info("launching")
-	transport, err := NewProgramTransport("/home/swgillespie/.cargo/bin/apollo")
+func runSelfplay() {
+	session := &selfplay.Session{
+		BaselineProgram:  *baselineEngine,
+		CandidateProgram: *candidateEngine,
+		NumGames:         *numGames,
+		NumParallelGames: *parallelGames,
+	}
+
+	if session.BaselineProgram == "" {
+		log.Fatalln("baseline engine not provided")
+	}
+	if session.CandidateProgram == "" {
+		log.Fatalln("candidate engine not provided")
+	}
+	ctx := context.Background()
+	res, err := session.Run(ctx)
 	if err != nil {
-		log.WithError(err).Fatalln("failed to launch process")
+		log.WithError(err).Fatalln("failed to run selfplay")
 	}
 
-	log.Info("negotiating UCI")
-	client, err := NewUCIClient(transport)
-	if err != nil {
-		log.WithError(err).Fatalln("failed to negogiate UCI")
-	}
-
-	log.WithField("name", client.Name()).Info("client name")
-	log.WithField("author", client.Author()).Info("client author")
-
-	if err := client.UCINewGame(); err != nil {
-		log.WithError(err).Fatalln("failed to start new game")
-	}
-	if err := client.IsReady(); err != nil {
-		log.WithError(err).Fatalln("failed to ready up")
-	}
-	if err := client.Position("startpos", nil); err != nil {
-		log.WithError(err).Fatalln("failed to set position")
-	}
-	bestmove, err := client.Go(0, 0, 0, 0)
-	if err != nil {
-		log.WithError(err).Fatalln("failed to query position")
-	}
-	log.Info("best move: " + bestmove)
-
-	if err := client.Stop(); err != nil {
-		log.WithError(err).Fatalln("failed to stop")
-	}
-	if err := client.Quit(); err != nil {
-		log.WithError(err).Fatalln("failed to quit")
-	}
-	if err := client.Close(); err != nil {
-		log.WithError(err).Fatalln("failed to close client")
-	}
+	candidateScore := float64(res.Wins)
+	baselineScore := float64(res.Losses)
+	candidateScore += float64(res.Draws) / float64(2)
+	baselineScore += float64(res.Draws) / float64(2)
+	fmt.Printf("final score: %f-%f\n", candidateScore, baselineScore)
 }
-*/
