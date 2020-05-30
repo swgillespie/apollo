@@ -26,6 +26,7 @@ criterion = "0.2"
 
 [profile.release]
 debug-assertions = false
+debug = true
 
 [[bench]]
 name = "benchmarks"

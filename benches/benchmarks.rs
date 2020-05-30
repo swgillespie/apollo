@@ -10,7 +10,7 @@
 extern crate criterion;
 
 use apollo::attacks;
-use apollo::{Bitboard, MoveGenerator, MoveVec, Position, Square};
+use apollo::{Bitboard, Color, MoveGenerator, MoveVec, Position, Square};
 use criterion::black_box;
 use criterion::Criterion;
 
@@ -43,6 +43,13 @@ fn criterion_benchmark(c: &mut Criterion) {
             let gen = MoveGenerator::new();
             gen.generate_moves(black_box(&pos), &mut vec);
         });
+    });
+
+    c.bench_function("squares attacking no attackers", |b| {
+        let pos =
+            Position::from_fen("rnbqkb1r/ppp2ppp/5n2/3pp3/4P3/3B1N2/PPPP1PPP/RNBQK2R w KQkq - 0 1")
+                .unwrap();
+        b.iter(|| black_box(&pos).squares_attacking(black_box(Color::Black), black_box(Square::F3)))
     });
 }
 
