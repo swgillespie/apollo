@@ -357,33 +357,62 @@ impl Position {
 
 impl Position {
     pub fn squares_attacking(&self, to_move: Color, target: Square) -> Bitboard {
-        let occupancy = self.pieces(Color::White).or(self.pieces(Color::Black));
         let mut attacks = Bitboard::none();
-        for queen in self.queens(to_move) {
-            if attacks::queen_attacks(queen, occupancy).test(target) {
-                attacks.set(queen);
+
+        // Pretend that there's a "super-piece" at the target square and see if it hits anything.
+        // This covers all pieces except for kings and pawns.
+        let occupancy = self.pieces(Color::White) | self.pieces(Color::Black);
+
+        // Queen attacks cover bishops, rooks, and queens, so check that first.
+        let sliding_pieces = self.pieces_of_kind(to_move, PieceKind::Queen)
+            | self.pieces_of_kind(to_move, PieceKind::Rook)
+            | self.pieces_of_kind(to_move, PieceKind::Bishop);
+        let sliding_attacks = attacks::queen_attacks(target, occupancy).and(sliding_pieces);
+        if !sliding_attacks.empty() {
+            // Hit - there's something that might be attacking via a slide. However, since we're
+            // modeling a superpiece, we need to check that the attacking pieces actually can legally
+            // attack this square.
+            for attacker in sliding_attacks {
+                let piece = self
+                    .piece_at(attacker)
+                    .expect("attack table produced piece not on board?");
+                if piece.attacks(attacker, occupancy).test(target) {
+                    attacks.set(attacker);
+                }
             }
         }
-        for rook in self.rooks(to_move) {
-            if attacks::rook_attacks(rook, occupancy).test(target) {
-                attacks.set(rook);
+
+        // Knight attacks are straightforward since knight moves are symmetric.
+        let knight_attacks = attacks::knight_attacks(target).and(self.knights(to_move));
+        if !knight_attacks.empty() {
+            attacks = attacks | knight_attacks;
+        }
+
+        // For pawns, there are only a few places a pawn could be to legally attack this square. In all cases,
+        // the capturing pawn has to be on the rank immediately above (or below) the square we're looking at.
+        //
+        // A correlary to this is that pieces on the bottom (or top) ranks can't be attacked by pawns.
+        let cant_be_attacked_by_pawns_rank = if to_move == Color::White {
+            Rank::One
+        } else {
+            Rank::Eight
+        };
+
+        if target.rank() != cant_be_attacked_by_pawns_rank {
+            let pawn_attack_rank = if to_move == Color::White {
+                target.towards(Direction::South).rank()
+            } else {
+                target.towards(Direction::North).rank()
+            };
+
+            for pawn in self.pawns(to_move) & Bitboard::all().rank(pawn_attack_rank) {
+                if attacks::pawn_attacks(pawn, to_move).test(target) {
+                    attacks.set(pawn);
+                }
             }
         }
-        for bishop in self.bishops(to_move) {
-            if attacks::bishop_attacks(bishop, occupancy).test(target) {
-                attacks.set(bishop);
-            }
-        }
-        for knight in self.knights(to_move) {
-            if attacks::knight_attacks(knight).test(target) {
-                attacks.set(knight);
-            }
-        }
-        for pawn in self.pawns(to_move) {
-            if attacks::pawn_attacks(pawn, to_move).test(target) {
-                attacks.set(pawn);
-            }
-        }
+
+        // There's only one king, so it's cheap to check.
         for king in self.kings(to_move) {
             if attacks::king_attacks(king).test(target) {
                 attacks.set(king);
@@ -988,7 +1017,13 @@ impl Position {
             buf.push('-');
         }
         buf.push(' ');
-        write!(&mut buf, "{} {}", self.halfmove_clock(), self.fullmove_clock()).unwrap();
+        write!(
+            &mut buf,
+            "{} {}",
+            self.halfmove_clock(),
+            self.fullmove_clock()
+        )
+        .unwrap();
         buf
     }
 }

@@ -93,7 +93,7 @@ fn run_perft(matches: &ArgMatches) -> ! {
     println!();
     for i in 1..depth + 1 {
         let start = Instant::now();
-        let results = perft(&pos, i, false);
+        let results = perft(&pos, i, true);
         let stop = Instant::now();
         let duration = stop - start;
         let nanos = duration.subsec_nanos() as u64;

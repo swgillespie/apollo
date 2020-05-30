@@ -274,6 +274,7 @@ mod tests {
             if !hash.contains(mov) {
                 println!("move {} was not generated", mov);
                 println!("{}", pos);
+                println!("moves: {:?}", mov_vec);
                 panic!()
             }
         }
