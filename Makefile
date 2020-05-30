@@ -1,3 +1,5 @@
+DOCKER ?= docker
+
 .PHONY: default engine server test clean all
 default: all
 
@@ -18,6 +20,6 @@ clean:
 	rm -rf build
 
 docker:
-	docker build -t apollo:latest .
+	$(DOCKER) build -t apollo:latest .
 
 all: engine server

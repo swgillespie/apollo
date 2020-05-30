@@ -1,4 +1,4 @@
-FROM golang:1.12.5-stretch
+FROM golang:1.13.11-stretch
 
 RUN apt-get update \
     && apt-get install -y curl file sudo build-essential
