@@ -122,7 +122,7 @@ impl UciServer {
         info!("beginning search, (depth 10, 20 second budget)");
         let result = self.search.search(
             &self.pos,
-            10,
+            12,
             Some(Duration::from_secs(1)),
             &NullDataRecorder,
         );

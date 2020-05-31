@@ -366,6 +366,20 @@ impl Display for PieceKind {
     }
 }
 
+impl PieceKind {
+    /// Gets the standard value of this piece.
+    pub fn value(self) -> i32 {
+        match self {
+            PieceKind::Pawn => 1,
+            PieceKind::Knight => 3,
+            PieceKind::Bishop => 3,
+            PieceKind::Rook => 5,
+            PieceKind::Queen => 9,
+            PieceKind::King => 10000,
+        }
+    }
+}
+
 pub static PIECE_KINDS: [PieceKind; 6] = [
     PieceKind::Pawn,
     PieceKind::Knight,

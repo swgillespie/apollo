@@ -12,7 +12,7 @@ use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
 use crate::position::Position;
 use crate::search::{DataRecorder, NodeKind, Record, TranspositionTable};
-use crate::types::Color;
+use crate::types::{Color, PieceKind, Square};
 
 pub struct SearchResult {
     pub best_move: Move,
@@ -273,6 +273,8 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
         let mut moves = MoveVec::default();
         gen.generate_moves(pos, &mut moves);
         moves.retain(|&mut m| pos.is_legal_given_pseudolegal(m));
+        // Order our moves to favor good ones earlier.
+        order_moves(pos, &mut moves);
         if moves.len() == 0 {
             // No legal moves available. Are we in check?
             let score = if pos.is_check(pos.side_to_move()) {
@@ -377,13 +379,78 @@ impl<'a, E: BoardEvaluator> IterativeSearch<'a, E> {
     }
 }
 
+/// Performs move ordering for a list of legal moves from a given position. Move ordering is crucial
+/// for alpha-beta search. It is our best defense against combinatorial explosion of the state space
+/// of chess.
+///
+/// This function heuristically orders all moves in order of how good they appear to be, without searching
+/// the tree of moves directly.
+///
+/// Note that the hash move is not included here, since the searcher handles that already.
+fn order_moves(pos: &Position, moves: &mut [Move]) {
+    // For the purposes of move ordering, we derive a total order of moves by ranking them
+    // by their static exchange scores. Static exchange generally refers to captures, but for move
+    // ordering we'll also consider promotions to count for a score.
+    //
+    // We'll drive a move score for every move and use that as the sorting key.
+    fn move_score(pos: &Position, mov: Move) -> i32 {
+        match mov {
+            // En-passant is an annoying edge case in everything, SEE is no exception. Put it before
+            // the quiet moves but don't consider it particularly good.
+            mov if mov.is_en_passant() => 1,
+            // TODO(swgillespie) - This probably overestimates the value of promotion captures...
+            mov if mov.is_capture() && mov.is_promotion() => {
+                mov.promotion_piece().value() - 1
+                    + static_exchange_evaluation(pos, mov.destination())
+            }
+            mov if mov.is_capture() => static_exchange_evaluation(pos, mov.destination()),
+            mov if mov.is_promotion() => mov.promotion_piece().value() - 1,
+            _ => 0,
+        }
+    }
+
+    moves.sort_by_cached_key(|&mov| -move_score(pos, mov));
+}
+
+fn static_exchange_evaluation(pos: &Position, target: Square) -> i32 {
+    let mut value = 0;
+    if let Some(attacker) = smallest_attacker(pos, target) {
+        let target_piece = pos.piece_at(target).unwrap();
+        let mut child = pos.clone();
+        let mov = Move::capture(attacker, target);
+        child.apply_move(mov);
+        value = target_piece.kind.value() - static_exchange_evaluation(&child, target);
+    }
+
+    value
+}
+
+fn smallest_attacker(pos: &Position, target: Square) -> Option<Square> {
+    let attackers = pos.squares_attacking(pos.side_to_move(), target);
+    if attackers.empty() {
+        return None;
+    }
+
+    let mut values: Vec<(Square, PieceKind)> = attackers
+        .into_iter()
+        .map(|sq| (sq, pos.piece_at(sq).unwrap().kind))
+        .collect();
+
+    values.sort_by_key(|(_, kind)| kind.value());
+    return values.first().map(|(sq, _)| sq).cloned();
+}
+
 #[cfg(test)]
 mod tests {
     use crate::eval::ShannonEvaluator;
+    use crate::move_generator::{MoveGenerator, MoveVec};
+    use crate::moves::Move;
     use crate::position::Position;
     use crate::search::NullDataRecorder;
+    use crate::types::Square;
 
     use super::Searcher;
+    use super::{order_moves, static_exchange_evaluation};
 
     #[test]
     // Test to ensure that we don't regress our alpha-beta prune too badly.
@@ -392,5 +459,40 @@ mod tests {
         let mut search: Searcher<ShannonEvaluator> = Default::default();
         let result = search.search(&pos, 2, None, &NullDataRecorder);
         assert!(result.nodes_searched <= 80);
+    }
+
+    #[test]
+    fn see_pawn_exchange_bad_for_player() {
+        let pos = Position::from_fen("8/6p1/1R3b2/8/8/2B5/8/5r2 w - - 0 1").unwrap();
+        // White to move, white threatens f6 and initiates an exchange.
+        let predicted_yield = static_exchange_evaluation(&pos, Square::F6);
+
+        // White trades a bishop and a rook (8) for a pawn and a bishop (4), a loss of 4.
+        assert_eq!(predicted_yield, -4);
+    }
+
+    #[test]
+    fn see_exchange_good_for_player() {
+        let pos = Position::from_fen("8/r2q4/8/8/6B1/8/3Q4/8 w - - 0 1").unwrap();
+        // White to move, white threatens Bxd7 and initiates an exchange.
+        let predicted_yield = static_exchange_evaluation(&pos, Square::D7);
+
+        // White trades a bishop (3) for a queen and a rook (14), for a win of 11.
+        assert_eq!(predicted_yield, 11);
+    }
+
+    #[test]
+    fn move_ordering_good_captures_first() {
+        let pos = Position::from_fen("5b2/8/3r2r1/2P5/5B2/8/3Q4/8 w - - 0 1").unwrap();
+        let gen = MoveGenerator::new();
+        let mut moves = MoveVec::default();
+        gen.generate_moves(&pos, &mut moves);
+        moves.retain(|&mut m| pos.is_legal_given_pseudolegal(m));
+
+        order_moves(&pos, &mut moves);
+        assert_eq!(
+            moves.first().cloned().unwrap(),
+            Move::capture(Square::C5, Square::D6)
+        );
     }
 }
