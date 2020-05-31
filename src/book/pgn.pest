@@ -1,0 +1,26 @@
+lines = !{ line* }
+
+line = { tag_pairs* ~ moves }
+
+tag_pairs = { "[" ~ identifier ~ string ~ "]" }
+
+identifier = { ident_char+ }
+ident_char = _{ 'a'..'z' | 'A'..'Z' | '0'..'9' }
+
+string = ${ "\"" ~ inner ~ "\"" }
+inner = @{ char* }
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
+moves = { mov+ }
+mov = { turn_number ~ san ~ san?}
+san = _{ normal_move | castle }
+normal_move = { ASCII_ALPHA{,3} ~ ASCII_DIGIT }
+castle = { "O-O" | "O-O-O" }
+
+turn_number = { ASCII_DIGIT+ ~ "." }
+
+WHITESPACE = _{ " " | "\n" }

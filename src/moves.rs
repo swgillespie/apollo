@@ -43,6 +43,7 @@
 //! for the details.
 use crate::types::{PieceKind, Square};
 use num_traits::FromPrimitive;
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::{self, Write};
 
 const SOURCE_MASK: u16 = 0xFC00;
@@ -89,7 +90,7 @@ const ATTR_MASK: u16 = 0x000F;
 ///
 /// Thanks to https://chessprogramming.wikispaces.com/Encoding+Moves
 /// for the details.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Move(u16);
 
 impl Move {
