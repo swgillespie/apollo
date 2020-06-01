@@ -19,7 +19,7 @@ use clap::{App, Arg};
 use pest::Parser;
 
 use apollo::book::{BookEntry, OpeningBook};
-use apollo::{Move, Position, Square};
+use apollo::Position;
 
 #[derive(Parser)]
 #[grammar = "bin/pgn.pest"]
@@ -102,11 +102,5 @@ fn main() {
         book.add_entry(&move_sequence, book_entry);
     }
 
-    /*
-    println!(
-        "{:#?}",
-        book.book_moves(&[Move::quiet(Square::E2, Square::E4)])
-    );
-    */
     println!("{}", serde_json::to_string_pretty(&book).unwrap());
 }
