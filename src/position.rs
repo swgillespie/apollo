@@ -5,12 +5,18 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt::{self, Write};
 
 use crate::attacks;
 use crate::bitboard::Bitboard;
-use crate::bitboard::{BB_RANK_1, BB_RANK_2, BB_RANK_7, BB_RANK_8};
+use crate::bitboard::{
+    BB_FILE_A, BB_FILE_B, BB_FILE_C, BB_FILE_D, BB_FILE_E, BB_FILE_F, BB_FILE_G, BB_FILE_H,
+};
+use crate::bitboard::{
+    BB_RANK_1, BB_RANK_2, BB_RANK_3, BB_RANK_4, BB_RANK_5, BB_RANK_6, BB_RANK_7, BB_RANK_8,
+};
 use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
 use crate::types::TableIndex;
@@ -966,6 +972,105 @@ impl Position {
         return Some(Move::quiet(source, dest));
     }
 
+    /// Converts a move in SAN format to a Move, utilizing the context of the board to disambiguate
+    /// the SAN representation.
+    pub fn move_from_san(&self, san_str: &str) -> Option<Move> {
+        // SAN is extremely brief and omits pieces of data that are unambiguous given the board. Almost
+        // all pieces of information are optional if they aren't necessary.
+        //
+        // Some obvious outs, though: castles are treated specially. FIDE says that this must be the digit zero,
+        // but PGN uses the letter O. Go figure.
+        let to_move = self.side_to_move();
+        match san_str {
+            "O-O" | "0-0" => {
+                return Some(Move::kingside_castle(
+                    king_start(to_move),
+                    kingside_rook(to_move),
+                ))
+            }
+            "O-O-O" | "0-0-0" => {
+                return Some(Move::queenside_castle(
+                    king_start(to_move),
+                    queenside_rook(to_move),
+                ))
+            }
+            _ => {}
+        }
+
+        let re = Regex::new(r"^(?P<piece>[BNRQ]?)(?P<file>[a-h]?)(?P<rank>[1-8]?)(?P<capture>x?)(?P<destination_file>[a-h])(?P<destination_rank>[1-8])$").unwrap();
+        let captures = re.captures(san_str)?;
+        let mut piece_mask = Bitboard::all();
+        let moving_piece = match &captures["piece"] {
+            "B" => PieceKind::Bishop,
+            "N" => PieceKind::Knight,
+            "R" => PieceKind::Rook,
+            "Q" => PieceKind::Queen,
+            "K" => PieceKind::King,
+            _ => PieceKind::Pawn,
+        };
+
+        piece_mask &= self.pieces_of_kind(to_move, moving_piece);
+        piece_mask &= match &captures["file"] {
+            "a" => BB_FILE_A,
+            "b" => BB_FILE_B,
+            "c" => BB_FILE_C,
+            "d" => BB_FILE_D,
+            "e" => BB_FILE_E,
+            "f" => BB_FILE_F,
+            "g" => BB_FILE_G,
+            "h" => BB_FILE_H,
+            _ => Bitboard::all(),
+        };
+        piece_mask &= match &captures["rank"] {
+            "1" => BB_RANK_1,
+            "2" => BB_RANK_2,
+            "3" => BB_RANK_3,
+            "4" => BB_RANK_4,
+            "5" => BB_RANK_5,
+            "6" => BB_RANK_6,
+            "7" => BB_RANK_7,
+            "8" => BB_RANK_8,
+            _ => Bitboard::all(),
+        };
+
+        let dest_file = match &captures["destination_file"] {
+            "a" => File::A,
+            "b" => File::B,
+            "c" => File::C,
+            "d" => File::D,
+            "e" => File::E,
+            "f" => File::F,
+            "g" => File::G,
+            "h" => File::H,
+            _ => return None,
+        };
+
+        let dest_rank = match &captures["destination_rank"] {
+            "1" => Rank::One,
+            "2" => Rank::Two,
+            "3" => Rank::Three,
+            "4" => Rank::Four,
+            "5" => Rank::Five,
+            "6" => Rank::Six,
+            "7" => Rank::Seven,
+            "8" => Rank::Eight,
+            _ => return None,
+        };
+
+        let dest_square = Square::of(dest_rank, dest_file);
+        let gen = MoveGenerator::new();
+        let mut moves = MoveVec::default();
+        gen.generate_moves(self, &mut moves);
+        moves.retain(|&mut m| self.is_legal_given_pseudolegal(m));
+
+        for mov in moves {
+            if piece_mask.test(mov.source()) && mov.destination() == dest_square {
+                return Some(mov);
+            }
+        }
+        return None;
+    }
+
     pub fn as_fen(&self) -> String {
         let mut buf = String::new();
         for &rank in RANKS.iter().rev() {
@@ -1070,6 +1175,13 @@ impl Default for Position {
 //
 // Helper functions
 //
+
+fn king_start(color: Color) -> Square {
+    match color {
+        Color::White => Square::E1,
+        Color::Black => Square::E8,
+    }
+}
 
 fn kingside_rook(color: Color) -> Square {
     match color {
@@ -1419,6 +1531,75 @@ mod tests {
                 Move::promotion_capture(Square::E7, Square::F8, PieceKind::Queen),
                 pos.move_from_uci("e7f8q").unwrap()
             );
+        }
+    }
+
+    mod san {
+        use crate::moves::Move;
+        use crate::position::Position;
+        use crate::types::Square;
+
+        #[test]
+        fn pawn_move() {
+            let pos = Position::from_start_position();
+            let mov = pos.move_from_san("b4").unwrap();
+            assert_eq!(mov, Move::double_pawn_push(Square::B2, Square::B4));
+        }
+
+        #[test]
+        fn knight_move() {
+            let pos = Position::from_start_position();
+            let mov = pos.move_from_san("Nf3").unwrap();
+            assert_eq!(mov, Move::quiet(Square::G1, Square::F3));
+        }
+
+        #[test]
+        fn disambiguating_bishop() {
+            let pos = Position::from_fen("3r3r/b7/3b4/R7/4Q2Q/8/8/R6Q b - - 0 1").unwrap();
+            let mov = pos.move_from_san("Bdb8").unwrap();
+            assert_eq!(mov, Move::quiet(Square::D6, Square::B8));
+        }
+
+        #[test]
+        fn disambiguating_queen() {
+            let pos = Position::from_fen("3r3r/b7/3b4/R7/4Q2Q/8/8/R6Q w - - 0 1").unwrap();
+            let mov = pos.move_from_san("Qh4e1").unwrap();
+            assert_eq!(mov, Move::quiet(Square::H4, Square::E1));
+        }
+
+        #[test]
+        fn disambiguating_rook() {
+            let pos = Position::from_fen("3r3r/b7/3b4/R7/4Q2Q/8/8/R6Q w - - 0 1").unwrap();
+            let mov = pos.move_from_san("R1a3").unwrap();
+            assert_eq!(mov, Move::quiet(Square::A1, Square::A3));
+        }
+
+        #[test]
+        fn kingside_castle() {
+            let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
+            let mov = pos.move_from_san("O-O").unwrap();
+            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::H1));
+        }
+
+        #[test]
+        fn queenside_castle() {
+            let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
+            let mov = pos.move_from_san("O-O-O").unwrap();
+            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::A1));
+        }
+
+        #[test]
+        fn kingside_castle_zeros() {
+            let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
+            let mov = pos.move_from_san("0-0").unwrap();
+            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::H1));
+        }
+
+        #[test]
+        fn queenside_castle_zeros() {
+            let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
+            let mov = pos.move_from_san("0-0-0").unwrap();
+            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::A1));
         }
     }
 
