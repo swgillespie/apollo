@@ -1,8 +1,8 @@
-lines = !{ line* }
+lines = { SOI ~ line+ ~ EOI }
 
-line = { tag_pairs* ~ moves }
+line = { tag_pair* ~ moves }
 
-tag_pairs = { "[" ~ identifier ~ string ~ "]" }
+tag_pair = { "[" ~ identifier ~ string ~ "]" }
 
 identifier = { ident_char+ }
 ident_char = _{ 'a'..'z' | 'A'..'Z' | '0'..'9' }
@@ -17,10 +17,10 @@ char = {
 
 moves = { mov+ }
 mov = { turn_number ~ san ~ san?}
-san = _{ normal_move | castle }
-normal_move = { ASCII_ALPHA{,3} ~ ASCII_DIGIT }
-castle = { "O-O" | "O-O-O" }
+san = _{ castle | normal_move }
+normal_move = ${ (ASCII_ALPHA | ASCII_DIGIT | "x" | "+" | "#")+ }
+castle = { "O-O-O" | "O-O" }
 
 turn_number = { ASCII_DIGIT+ ~ "." }
 
-WHITESPACE = _{ " " | "\n" }
+WHITESPACE = _{ " " | "\n" | "\r\n" | "\t" }

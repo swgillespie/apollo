@@ -16,28 +16,29 @@ pub struct OpeningBook {
 }
 
 impl OpeningBook {
-    pub fn book_moves(&self, played_sequence: &[Move]) -> Vec<Move> {
+    pub fn new() -> OpeningBook {
+        OpeningBook {
+            tree: RadixTree::new(),
+        }
+    }
+
+    pub fn book_moves(&self, played_sequence: &[Move]) -> Vec<(Move, BookEntry)> {
         let mut moves = vec![];
-        self.tree.each_child(played_sequence, |mov, _| {
-            moves.push(mov);
+        self.tree.each_child(played_sequence, |mov, entry| {
+            moves.push((mov, entry.cloned().unwrap()));
         });
 
         moves
     }
+
+    pub fn add_entry(&mut self, sequence: &[Move], value: BookEntry) {
+        self.tree.insert(sequence, value)
+    }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-enum Category {
-    A(u32),
-    B(u32),
-    C(u32),
-    D(u32),
-    E(u32),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct BookEntry {
-    pub category: Category,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BookEntry {
+    pub category: String,
     pub lead_name: String,
     pub response_name: Option<String>,
 }

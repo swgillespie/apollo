@@ -8,3 +8,5 @@
 
 mod opening_book;
 mod radix_tree;
+
+pub use opening_book::{BookEntry, OpeningBook};

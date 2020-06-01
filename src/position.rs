@@ -985,19 +985,21 @@ impl Position {
             "O-O" | "0-0" => {
                 return Some(Move::kingside_castle(
                     king_start(to_move),
-                    kingside_rook(to_move),
+                    kingside_rook(to_move).towards(Direction::West),
                 ))
             }
             "O-O-O" | "0-0-0" => {
                 return Some(Move::queenside_castle(
                     king_start(to_move),
-                    queenside_rook(to_move),
+                    queenside_rook(to_move)
+                        .towards(Direction::East)
+                        .towards(Direction::East),
                 ))
             }
             _ => {}
         }
 
-        let re = Regex::new(r"^(?P<piece>[BNRQ]?)(?P<file>[a-h]?)(?P<rank>[1-8]?)(?P<capture>x?)(?P<destination_file>[a-h])(?P<destination_rank>[1-8])$").unwrap();
+        let re = Regex::new(r"^(?P<piece>[BNRQK]?)(?P<file>[a-h]?)(?P<rank>[1-8]?)(?P<capture>x?)(?P<destination_file>[a-h])(?P<destination_rank>[1-8])[\+#]?$").unwrap();
         let captures = re.captures(san_str)?;
         let mut piece_mask = Bitboard::all();
         let moving_piece = match &captures["piece"] {
@@ -1578,28 +1580,37 @@ mod tests {
         fn kingside_castle() {
             let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
             let mov = pos.move_from_san("O-O").unwrap();
-            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::H1));
+            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::G1));
         }
 
         #[test]
         fn queenside_castle() {
             let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
             let mov = pos.move_from_san("O-O-O").unwrap();
-            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::A1));
+            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::C1));
         }
 
         #[test]
         fn kingside_castle_zeros() {
             let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
             let mov = pos.move_from_san("0-0").unwrap();
-            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::H1));
+            assert_eq!(mov, Move::kingside_castle(Square::E1, Square::G1));
         }
 
         #[test]
         fn queenside_castle_zeros() {
             let pos = Position::from_fen("8/8/8/8/8/8/8/R3K2R w - - 0 1").unwrap();
             let mov = pos.move_from_san("0-0-0").unwrap();
-            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::A1));
+            assert_eq!(mov, Move::queenside_castle(Square::E1, Square::C1));
+        }
+
+        #[test]
+        fn king_move() {
+            let pos =
+                Position::from_fen("rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 1")
+                    .unwrap();
+            let mov = pos.move_from_san("Kf2").unwrap();
+            assert_eq!(mov, Move::quiet(Square::E1, Square::F2));
         }
     }
 

@@ -25,11 +25,12 @@ pub struct RadixTree<T> {
     root: RadixTreeNode<T>,
 }
 
-impl<T> RadixTree<T> {
+impl<T: Clone> RadixTree<T> {
     pub fn new() -> RadixTree<T> {
         RadixTree {
             root: RadixTreeNode {
                 key: Move::null(),
+                key_str: "0000".to_owned(),
                 value: None,
                 children: HashMap::new(),
             },
@@ -44,7 +45,8 @@ impl<T> RadixTree<T> {
             let child = cursor.children.entry(mov).or_insert_with(|| {
                 Box::new(RadixTreeNode {
                     key: mov,
-                    value: None,
+                    key_str: mov.as_uci(),
+                    value: Some(value.clone()),
                     children: HashMap::new(),
                 })
             });
@@ -90,6 +92,7 @@ impl<T> RadixTree<T> {
 #[derive(Deserialize, Serialize)]
 struct RadixTreeNode<T> {
     key: Move,
+    key_str: String,
     value: Option<T>,
     children: HashMap<Move, Box<RadixTreeNode<T>>>,
 }
@@ -147,6 +150,11 @@ mod tests {
             7
         );
 
-        assert!(tree.get(&[Move::quiet(Square::E5, Square::E6)]).is_none())
+        assert_eq!(
+            tree.get(&[Move::quiet(Square::E5, Square::E6)])
+                .cloned()
+                .unwrap(),
+            6
+        );
     }
 }

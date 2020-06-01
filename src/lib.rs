@@ -21,7 +21,7 @@ extern crate serde_derive;
 mod analysis;
 pub mod attacks;
 mod bitboard;
-mod book;
+pub mod book;
 pub mod eval;
 mod move_generator;
 mod moves;
