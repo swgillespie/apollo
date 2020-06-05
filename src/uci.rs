@@ -9,6 +9,7 @@ use std::fmt::Write;
 use std::io::{self, BufRead};
 use std::time::Duration;
 
+use crate::book::OpeningBook;
 use crate::eval::Score;
 use crate::eval::ShannonEvaluator;
 use crate::position::Position;
@@ -30,13 +31,15 @@ macro_rules! uci_println {
 }
 
 pub struct UciServer {
+    book: Option<OpeningBook>,
     pos: Position,
     search: Searcher<ShannonEvaluator>,
 }
 
 impl UciServer {
-    pub fn new() -> UciServer {
+    pub fn new(book: Option<OpeningBook>) -> UciServer {
         UciServer {
+            book: book,
             pos: Position::new(),
             search: Default::default(),
         }
@@ -58,7 +61,7 @@ impl UciServer {
                 ("quit", []) => return Ok(()),
                 ("ucinewgame", []) => {
                     info!("clearing search tables");
-                    self.search = Default::default();
+                    self.search = Searcher::new(self.book.clone());
                 }
                 ("position", args) => self.handle_position(args),
                 ("go", args) => self.handle_go(args),
@@ -90,7 +93,7 @@ impl UciServer {
         let fen_idx = slice.into_iter().position(|&idx| idx == "fen");
         let startpos_idx = slice.into_iter().position(|&idx| idx == "startpos");
         let fen = if let Some(idx) = fen_idx {
-            let s = &slice[idx + 1..move_idx];
+            let s = &slice[idx + 1..move_idx + 1];
             s.join(" ")
         } else if let Some(_) = startpos_idx {
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_owned()
@@ -142,7 +145,7 @@ impl UciServer {
 
 impl Default for UciServer {
     fn default() -> UciServer {
-        UciServer::new()
+        UciServer::new(None)
     }
 }
 

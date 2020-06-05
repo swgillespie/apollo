@@ -20,7 +20,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// A simple and efficient radix tree keyed by sequences of moves.
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct RadixTree<T> {
     root: RadixTreeNode<T>,
 }
@@ -89,7 +89,7 @@ impl<T: Clone> RadixTree<T> {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 struct RadixTreeNode<T> {
     key: Move,
     key_str: String,

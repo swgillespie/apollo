@@ -10,7 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::book::radix_tree::RadixTree;
 use crate::moves::Move;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OpeningBook {
     tree: RadixTree<BookEntry>,
 }
@@ -20,6 +20,10 @@ impl OpeningBook {
         OpeningBook {
             tree: RadixTree::new(),
         }
+    }
+
+    pub fn is_in_book(&self, line: &[Move]) -> bool {
+        self.tree.get(line).is_some()
     }
 
     pub fn book_moves(&self, played_sequence: &[Move]) -> Vec<(Move, BookEntry)> {

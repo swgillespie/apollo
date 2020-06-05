@@ -5,8 +5,11 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use std::time::{Duration, Instant};
 
+use crate::book::OpeningBook;
 use crate::eval::{BoardEvaluator, Score};
 use crate::move_generator::{MoveGenerator, MoveVec};
 use crate::moves::Move;
@@ -23,13 +26,15 @@ pub struct SearchResult {
 pub struct Searcher<E> {
     evaluator: E,
     ttable: TranspositionTable,
+    book: Option<OpeningBook>,
 }
 
 impl<E: BoardEvaluator> Searcher<E> {
-    pub fn new() -> Searcher<E> {
+    pub fn new(book: Option<OpeningBook>) -> Searcher<E> {
         Searcher {
             evaluator: Default::default(),
             ttable: TranspositionTable::new(),
+            book: book,
         }
     }
 
@@ -40,6 +45,28 @@ impl<E: BoardEvaluator> Searcher<E> {
         time_budget: Option<Duration>,
         recorder: &dyn DataRecorder,
     ) -> SearchResult {
+        // Play a random book move, if we're still in the book.
+        if let Some(book) = self.book.as_ref() {
+            let history = pos.move_history();
+            if book.is_in_book(history) {
+                let mut rng = thread_rng();
+                let book_moves = book.book_moves(history);
+                if let Some((book_move, entry)) = book_moves.choose(&mut rng) {
+                    info!("playing book move: {} ({})", book_move, entry.lead_name);
+                    let mut new_pos = pos.clone();
+                    new_pos.apply_move(*book_move);
+                    let score = self.evaluator.evaluate(&new_pos);
+                    return SearchResult {
+                        best_move: *book_move,
+                        nodes_searched: 1,
+                        score: score,
+                    };
+                } else {
+                    info!("not playing book move, book departure at {:?}", history);
+                }
+            }
+        }
+
         let mut search = IterativeSearch::new(self, max_depth, time_budget);
         search.search(pos, recorder)
     }
@@ -47,7 +74,7 @@ impl<E: BoardEvaluator> Searcher<E> {
 
 impl<E: BoardEvaluator> Default for Searcher<E> {
     fn default() -> Searcher<E> {
-        Searcher::new()
+        Searcher::new(None)
     }
 }
 

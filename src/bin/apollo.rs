@@ -13,6 +13,7 @@ use std::fs::File;
 use std::process;
 use std::time::Instant;
 
+use apollo::book::OpeningBook;
 use apollo::eval::ShannonEvaluator;
 use apollo::search::{CsvDataRecorder, Searcher};
 use apollo::uci::UciServer;
@@ -71,7 +72,12 @@ fn main() {
         run_evaluate(matches);
     }
 
-    let svr = UciServer::new();
+    let book = if let Ok(mut file) = File::open("book.json") {
+        serde_json::from_reader::<_, OpeningBook>(&mut file).ok()
+    } else {
+        None
+    };
+    let svr = UciServer::new(book);
     svr.run().unwrap()
 }
 
@@ -122,7 +128,7 @@ fn run_evaluate(matches: &ArgMatches) -> ! {
     println!();
 
     let recorder = CsvDataRecorder::new(File::create("data.csv").unwrap());
-    let mut searcher: Searcher<ShannonEvaluator> = Searcher::new();
+    let mut searcher: Searcher<ShannonEvaluator> = Searcher::new(None);
     let result = searcher.search(&pos, depth, None, &recorder);
     println!("best move: {}", result.best_move);
     println!("    score: {}", result.score);

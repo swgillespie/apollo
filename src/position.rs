@@ -51,6 +51,7 @@ pub struct Position {
     side_to_move: Color,
     castle_status: CastleStatus,
     zobrist_hash: u64,
+    move_history: Vec<Move>,
 }
 
 //
@@ -68,6 +69,7 @@ impl Position {
             side_to_move: Color::White,
             castle_status: CastleStatus::NONE,
             zobrist_hash: 0,
+            move_history: Vec::new(),
         }
     }
 
@@ -139,6 +141,10 @@ impl Position {
 
     pub fn kings(&self, color: Color) -> Bitboard {
         self.pieces_of_kind(color, PieceKind::King)
+    }
+
+    pub fn move_history(&self) -> &[Move] {
+        &self.move_history
     }
 }
 
@@ -212,6 +218,7 @@ impl Position {
             return;
         }
 
+        self.move_history.push(mov);
         let moving_piece = self
             .piece_at(mov.source())
             .expect("invalid move: no piece at source square");
@@ -1229,8 +1236,8 @@ mod tests {
     use crate::types::{Color, Square};
 
     #[test]
-    fn size_is_136() {
-        assert_eq!(136, mem::size_of::<Position>());
+    fn size_is_160() {
+        assert_eq!(160, mem::size_of::<Position>());
     }
 
     #[test]
